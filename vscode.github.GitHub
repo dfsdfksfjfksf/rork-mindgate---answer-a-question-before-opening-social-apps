@@ -1,0 +1,4 @@
+2025-10-02 05:17:37.950 [info] Log level: Info
+2025-10-02 06:12:52.083 [info] Log level: Info
+2025-10-02 06:13:27.133 [warning] [GitHubBranchProtectionProvider][updateRepositoryBranchProtection] Failed to update repository branch protection: No GitHub authentication session available.
+2025-10-02 06:45:38.434 [warning] [GitHubSourceControlHistoryItemDetailsProvider][_loadAssignableUsers] Failed to load assignable user(s) for dfsdfksfjfksf/rork-mindgate---answer-a-question-before-opening-social-apps: Error: No GitHub authentication session available.
