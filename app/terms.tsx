@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
 import { Stack } from "expo-router";
 import { FileText } from "lucide-react-native";
 import { colors, spacing } from "@/constants/colors";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import NavigationHeader from "@/components/NavigationHeader";
 
 export default function TermsScreen() {
   const insets = useSafeAreaInsets();

@@ -2,17 +2,17 @@ import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
 import { Stack } from "expo-router";
 import { Shield } from "lucide-react-native";
 import { colors, spacing } from "@/constants/colors";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import NavigationHeader from "@/components/NavigationHeader";
 
 export default function PrivacyPolicyScreen() {
-  const insets = useSafeAreaInsets();
-
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === "web" ? 60 : insets.top + 20 }]}>
+    <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       
+      <NavigationHeader title="Privacy Policy" />
+      
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
+        <View style={styles.contentHeader}>
           <Shield size={48} color={colors.mint} />
           <Text style={styles.title}>Privacy Policy</Text>
           <Text style={styles.lastUpdated}>Last updated: January 2025</Text>
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 60,
   },
-  header: {
+  contentHeader: {
     alignItems: "center" as const,
     marginBottom: 32,
   },

@@ -2,12 +2,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Platform
 import { Stack } from "expo-router";
 import { Mail, HelpCircle, Sparkles, Shield, FileText, Info, Smartphone } from "lucide-react-native";
 import { colors, spacing } from "@/constants/colors";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Constants from "expo-constants";
+import NavigationHeader from "@/components/NavigationHeader";
 
 export default function SupportScreen() {
-  const insets = useSafeAreaInsets();
 
   const handleContactSupport = () => {
     const email = "support@rork.com";
@@ -67,11 +66,13 @@ export default function SupportScreen() {
   ];
 
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === "web" ? 60 : insets.top + 20 }]}>
+    <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       
+      <NavigationHeader title="Support & Legal" />
+      
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
+        <View style={styles.contentHeader}>
           <Info size={48} color={colors.mint} />
           <Text style={styles.title}>Support & Legal</Text>
           <Text style={styles.subtitle}>Get help and review our policies</Text>
@@ -143,7 +144,7 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 60,
   },
-  header: {
+  contentHeader: {
     alignItems: "center" as const,
     marginBottom: 40,
   },

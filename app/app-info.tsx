@@ -3,8 +3,8 @@ import { useState } from "react";
 import { Stack } from "expo-router";
 import { Info, Image, Smartphone, Save } from "lucide-react-native";
 import { colors, spacing } from "@/constants/colors";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
+import NavigationHeader from "@/components/NavigationHeader";
 
 export default function AppInfoScreen() {
   const insets = useSafeAreaInsets();
