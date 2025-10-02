@@ -134,6 +134,8 @@ export default function GateScreen() {
   const loadNextQuestion = () => {
     if (questions.length === 0) return;
 
+    console.log("Loading next question...");
+
     let nextQuestion: Question;
     if (assignment?.randomize) {
       const randomIndex = Math.floor(Math.random() * questions.length);
@@ -151,6 +153,9 @@ export default function GateScreen() {
     setUserAnswer("");
     setShowResult(false);
     setIsCorrect(false);
+    setIsCheckingAnswer(false);
+    setCooldownRemaining(0);
+    console.log("Next question loaded:", nextQuestion.prompt);
   };
 
   const checkAnswer = async (answer?: string) => {
