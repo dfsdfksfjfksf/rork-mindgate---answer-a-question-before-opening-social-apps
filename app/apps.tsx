@@ -1,9 +1,10 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Switch } from "react-native";
 import { useState } from "react";
-import { Plus, Trash2, ExternalLink } from "lucide-react-native";
+import { Plus, Trash2, ExternalLink, Smartphone } from "lucide-react-native";
 import { useLearnLock } from "@/contexts/MindGateContext";
 import { colors, spacing } from "@/constants/colors";
 import { router } from "expo-router";
+import { getDefaultAppConfig } from "@/constants/defaultApps";
 
 export default function AppsScreen() {
   const { appAssignments, quizSets, addAppAssignment, updateAppAssignment, deleteAppAssignment } = useLearnLock();
@@ -49,14 +50,19 @@ export default function AppsScreen() {
       return;
     }
 
+    // Get default config if available
+    const defaultConfig = getDefaultAppConfig(appName.trim());
+    
     await addAppAssignment({
       appName: appName.trim(),
       quizSetId: selectedQuizSetId,
-      schemeOrStoreURL: schemeOrStoreURL.trim() || undefined,
+      schemeOrStoreURL: schemeOrStoreURL.trim() || defaultConfig?.schemeOrStoreURL,
+      openUrl: defaultConfig?.openUrl,
       randomize,
       requireStreak: streakNum,
       cooldownSeconds: cooldownNum,
       enabled: false,
+      setupCompleted: false,
     });
 
     resetForm();
@@ -84,6 +90,19 @@ export default function AppsScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Quick Test Section */}
+        <View style={styles.quickTestSection}>
+          <Text style={styles.quickTestTitle}>Quick Test</Text>
+          <TouchableOpacity
+            style={styles.instagramTestButton}
+            onPress={() => handleTestGate('Instagram')}
+            activeOpacity={0.8}
+          >
+            <Smartphone size={20} color="#fff" />
+            <Text style={styles.instagramTestButtonText}>Test Gate for Instagram</Text>
+          </TouchableOpacity>
+        </View>
+
         {appAssignments.map((assignment) => {
           const quizSet = quizSets.find((q) => q.id === assignment.quizSetId);
           return (
@@ -102,9 +121,14 @@ export default function AppsScreen() {
                 <Text style={styles.cardMeta}>
                   Streak: {assignment.requireStreak} | Cooldown: {assignment.cooldownSeconds}s
                 </Text>
-                {assignment.schemeOrStoreURL && (
+                {(assignment.openUrl || assignment.schemeOrStoreURL) && (
                   <Text style={styles.cardUrl} numberOfLines={1}>
-                    {assignment.schemeOrStoreURL}
+                    {assignment.openUrl || assignment.schemeOrStoreURL}
+                  </Text>
+                )}
+                {!assignment.openUrl && !assignment.schemeOrStoreURL && (
+                  <Text style={styles.noUrlText}>
+                    No URL set - add one to enable app opening
                   </Text>
                 )}
               </View>
@@ -261,6 +285,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.mint,
     marginTop: 4,
+  },
+  noUrlText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 4,
+    fontStyle: "italic" as const,
+  },
+  quickTestSection: {
+    backgroundColor: colors.glass,
+    borderRadius: spacing.borderRadius.card,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+  },
+  quickTestTitle: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: colors.text,
+    marginBottom: 12,
+  },
+  instagramTestButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 8,
+    backgroundColor: colors.peach,
+    borderRadius: spacing.borderRadius.button,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    justifyContent: "center" as const,
+  },
+  instagramTestButtonText: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: "#fff",
   },
   cardActions: {
     flexDirection: "row" as const,

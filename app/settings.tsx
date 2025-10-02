@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInp
 import { useState, useEffect } from "react";
 import { Stack, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft, Save, Moon, Sun } from "lucide-react-native";
+import { ArrowLeft, Save, Moon, Sun, HelpCircle, BarChart3 } from "lucide-react-native";
 import { spacing } from "@/constants/colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLearnLock } from "@/contexts/MindGateContext";
@@ -14,12 +14,14 @@ export interface AppSettings {
   defaultRequireStreak: number;
   defaultCooldownSeconds: number;
   applyToExisting: boolean;
+  analyticsEnabled: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   defaultRequireStreak: 1,
   defaultCooldownSeconds: 5,
   applyToExisting: false,
+  analyticsEnabled: false,
 };
 
 export default function SettingsScreen() {
@@ -29,6 +31,7 @@ export default function SettingsScreen() {
   const [requireStreak, setRequireStreak] = useState<string>("1");
   const [cooldownSeconds, setCooldownSeconds] = useState<string>("5");
   const [applyToExisting, setApplyToExisting] = useState<boolean>(false);
+  const [analyticsEnabled, setAnalyticsEnabled] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   useEffect(() => {
@@ -43,6 +46,7 @@ export default function SettingsScreen() {
         setRequireStreak(settings.defaultRequireStreak.toString());
         setCooldownSeconds(settings.defaultCooldownSeconds.toString());
         setApplyToExisting(settings.applyToExisting ?? false);
+        setAnalyticsEnabled(settings.analyticsEnabled ?? false);
       }
     } catch (error) {
       console.error("Failed to load settings:", error);
@@ -71,6 +75,7 @@ export default function SettingsScreen() {
         defaultRequireStreak: streak,
         defaultCooldownSeconds: cooldown,
         applyToExisting,
+        analyticsEnabled,
       };
 
       await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -190,6 +195,48 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>privacy</Text>
+          <View style={[styles.settingCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
+            <View style={styles.settingRow}>
+              <View style={styles.settingHeaderInRow}>
+                <View style={styles.themeIconRow}>
+                  <BarChart3 size={20} color={colors.lilac} />
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>analytics</Text>
+                </View>
+                <Text style={[styles.settingHint, { color: colors.textMuted }]}>Help improve the app (default: off)</Text>
+              </View>
+              <Switch
+                value={analyticsEnabled}
+                onValueChange={setAnalyticsEnabled}
+                trackColor={{ false: colors.glass, true: colors.mint }}
+                thumbColor="#fff"
+                ios_backgroundColor={colors.glass}
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>support</Text>
+          <TouchableOpacity
+            style={[styles.supportCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}
+            onPress={() => router.push('/support')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.supportRow}>
+              <View style={styles.themeIconRow}>
+                <HelpCircle size={20} color={colors.peach} />
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Support & Legal</Text>
+              </View>
+              <ArrowLeft size={20} color={colors.textMuted} style={{ transform: [{ rotate: '180deg' }] }} />
+            </View>
+            <Text style={[styles.settingHint, { color: colors.textMuted, marginTop: 4 }]}>
+              Contact support, privacy policy, and terms
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <TouchableOpacity
           style={[styles.saveButton, { backgroundColor: colors.mint }, isSaving && styles.saveButtonDisabled]}
           onPress={saveSettings}
@@ -304,5 +351,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600" as const,
     color: "#fff",
+  },
+  supportCard: {
+    borderRadius: spacing.borderRadius.card,
+    padding: 20,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  supportRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
   },
 });

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform, Linking, Animated } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform, Linking, Animated, AccessibilityInfo } from "react-native";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocalSearchParams, Stack, router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -20,12 +20,33 @@ export default function GateScreen() {
     getAppAssignmentByName,
     getQuestionsForQuizSet,
     addAttempt,
+    quizSets,
   } = useLearnLock();
 
   const assignment = useMemo(() => {
     if (!app) return null;
+    
+    // Handle Preview mode with temporary assignment
+    if (app === 'Preview') {
+      // Create a temporary assignment for preview
+      const firstQuizSet = quizSets?.[0];
+      if (firstQuizSet) {
+        return {
+          id: 'preview-temp',
+          appName: 'Preview',
+          quizSetId: firstQuizSet.id,
+          schemeOrStoreURL: undefined,
+          openUrl: undefined,
+          randomize: true,
+          requireStreak: 1,
+          cooldownSeconds: 0,
+          enabled: true,
+        };
+      }
+    }
+    
     return getAppAssignmentByName(app);
-  }, [app, getAppAssignmentByName]);
+  }, [app, getAppAssignmentByName, quizSets]);
 
   const questions = useMemo(() => {
     if (!assignment) return [];
@@ -42,6 +63,7 @@ export default function GateScreen() {
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isCheckingAnswer, setIsCheckingAnswer] = useState<boolean>(false);
+  const [reduceMotionEnabled, setReduceMotionEnabled] = useState<boolean>(false);
   const resultFadeAnim = useRef(new Animated.Value(0)).current;
   const resultScaleAnim = useRef(new Animated.Value(0.95)).current;
 
@@ -68,6 +90,7 @@ export default function GateScreen() {
 
   useEffect(() => {
     loadSettings();
+    checkReduceMotion();
   }, []);
 
   useEffect(() => {
@@ -75,6 +98,24 @@ export default function GateScreen() {
       loadNextQuestion();
     }
   }, [questions, currentQuestion]);
+
+  const checkReduceMotion = async () => {
+    try {
+      const isReduceMotionEnabled = await AccessibilityInfo.isReduceMotionEnabled();
+      setReduceMotionEnabled(isReduceMotionEnabled);
+    } catch (error) {
+      console.log('Could not check reduce motion preference');
+    }
+  };
+
+  const animateWithMotionCheck = (animations: Animated.CompositeAnimation, skipAnimation?: boolean) => {
+    if (reduceMotionEnabled || skipAnimation) {
+      // Skip animations and set final values immediately
+      animations.stop();
+      return;
+    }
+    animations.start();
+  };
 
   const loadSettings = async () => {
     try {
@@ -240,9 +281,21 @@ export default function GateScreen() {
   };
 
   const handleContinue = async () => {
-    if (!assignment?.schemeOrStoreURL) return;
+    // Check for Preview mode
+    if (app === 'Preview') {
+      // Show preview message for reviewer testing
+      alert('In real use, this would open Instagram/TikTok/etc. This is just a preview!');
+      return;
+    }
 
-    let url = assignment.schemeOrStoreURL;
+    // Try openUrl first, then fallback to schemeOrStoreURL
+    let url = assignment?.openUrl || assignment?.schemeOrStoreURL;
+    
+    if (!url) {
+      // Show inline note to set URL in Apps
+      alert(`No URL configured for ${app}. Please set one in the Apps section.`);
+      return;
+    }
     
     // Handle different URL formats
     if (!url.includes('://')) {
@@ -409,7 +462,17 @@ export default function GateScreen() {
               nice! continue to {app}.
             </Text>
             <View style={styles.successButtonsContainer}>
-              {assignment.schemeOrStoreURL ? (
+              {app === 'Preview' ? (
+                <>
+                  <TouchableOpacity style={[styles.continueButton, styles.continueButtonDisabled]} disabled={true}>
+                    <ExternalLink size={24} color="#999" />
+                    <Text style={[styles.continueButtonText, styles.continueButtonTextDisabled]}>Continue to (Preview)</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.previewToast}>
+                    ✅ In real use, this opens Instagram/TikTok/etc.
+                  </Text>
+                </>
+              ) : assignment.openUrl || assignment.schemeOrStoreURL ? (
                 <TouchableOpacity style={styles.continueButton} onPress={handleContinue} activeOpacity={0.8}>
                   <ExternalLink size={24} color="#fff" />
                   <Text style={styles.continueButtonText}>Continue to {app}</Text>
@@ -524,6 +587,10 @@ export default function GateScreen() {
                   }}
                   disabled={showResult || cooldownRemaining > 0 || isCheckingAnswer}
                   activeOpacity={0.7}
+                  accessible={true}
+                  accessibilityLabel={`Answer choice ${index + 1}: ${choice}`}
+                  accessibilityRole="button"
+                  accessibilityHint={userAnswer === choice ? "Selected" : "Tap to select this answer"}
                 >
                   <Text
                     style={[
@@ -551,6 +618,9 @@ export default function GateScreen() {
               editable={!showResult && cooldownRemaining === 0}
               autoCapitalize="none"
               autoCorrect={false}
+              accessible={true}
+              accessibilityLabel="Answer input field"
+              accessibilityHint="Type your answer to the question here"
             />
           )}
 
@@ -886,6 +956,23 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600" as const,
     color: "#fff",
+  },
+  continueButtonDisabled: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "#666",
+    opacity: 0.6,
+  },
+  continueButtonTextDisabled: {
+    color: "#999",
+  },
+  previewToast: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.9)",
+    textAlign: "center" as const,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
   },
   noUrlText: {
     fontSize: 14,

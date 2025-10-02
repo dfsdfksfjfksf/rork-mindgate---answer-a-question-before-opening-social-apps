@@ -29,10 +29,12 @@ export interface AppAssignment {
   appName: string;
   quizSetId: string;
   schemeOrStoreURL?: string;
+  openUrl?: string;
   randomize: boolean;
   requireStreak: number;
   cooldownSeconds: number;
   enabled: boolean;
+  setupCompleted?: boolean;
 }
 
 export interface Attempt {

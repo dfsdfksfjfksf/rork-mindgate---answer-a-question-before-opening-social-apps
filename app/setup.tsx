@@ -1,10 +1,12 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Platform } from "react-native";
-import { AlertTriangle, ExternalLink, Copy, CheckCircle2 } from "lucide-react-native";
+import { AlertTriangle, ExternalLink, Copy, CheckCircle2, Play, Smartphone } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, spacing } from "@/constants/colors";
 import { useLearnLock } from "@/contexts/MindGateContext";
 import { useState } from "react";
+import { router } from "expo-router";
 import * as Clipboard from "expo-clipboard";
+import Constants from "expo-constants";
 
 export default function SetupScreen() {
   const insets = useSafeAreaInsets();
@@ -14,10 +16,15 @@ export default function SetupScreen() {
   const enabledAssignments = appAssignments.filter((a) => a.enabled);
 
   const handleCopyUrl = async (appName: string) => {
-    const url = `https://rork.com/gate?app=${encodeURIComponent(appName)}`;
+    const baseUrl = Constants.expoConfig?.extra?.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://rork.com';
+    const url = `${baseUrl}/gate?app=${encodeURIComponent(appName)}`;
     await Clipboard.setStringAsync(url);
     setCopiedUrl(appName);
     setTimeout(() => setCopiedUrl(""), 2000);
+  };
+
+  const handlePreviewGate = () => {
+    router.push('/gate?app=Preview');
   };
 
   const handleOpenShortcuts = async () => {
@@ -34,6 +41,17 @@ export default function SetupScreen() {
         <View style={styles.headerCard}>
           <Text style={styles.headerText}>
             shortcuts will open LearnLock first when these apps launch
+          </Text>
+        </View>
+
+        {/* Preview Gate and Reviewer Section */}
+        <View style={styles.previewSection}>
+          <TouchableOpacity style={styles.previewButton} onPress={handlePreviewGate} activeOpacity={0.8}>
+            <Play size={20} color="#fff" />
+            <Text style={styles.previewButtonText}>Preview Gate</Text>
+          </TouchableOpacity>
+          <Text style={styles.reviewerHint}>
+            💡 Reviewer quick test: Use Preview Gate to see the flow instantly; or create a Shortcuts automation with the copied link.
           </Text>
         </View>
 
@@ -180,7 +198,7 @@ export default function SetupScreen() {
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.urlText} numberOfLines={1}>
-                  https://rork.com/gate?app={assignment.appName}
+                  {Constants.expoConfig?.extra?.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://rork.com'}/gate?app={assignment.appName}
                 </Text>
               </View>
             ))}
@@ -226,6 +244,36 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlign: "center" as const,
     lineHeight: 24,
+  },
+  previewSection: {
+    marginBottom: 32,
+    alignItems: "center" as const,
+  },
+  previewButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 10,
+    backgroundColor: colors.lilac,
+    borderRadius: spacing.borderRadius.button,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    marginBottom: 16,
+  },
+  previewButtonText: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: "#fff",
+  },
+  reviewerHint: {
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: "center" as const,
+    backgroundColor: "rgba(183, 148, 246, 0.1)",
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(183, 148, 246, 0.2)",
+    lineHeight: 18,
   },
   stepsContainer: {
     gap: 24,
