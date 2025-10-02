@@ -600,49 +600,16 @@ export default function GateScreen() {
         )}
 
         {showResult && !isCorrect && cooldownRemaining === 0 && (
-          <Animated.View
-            style={{
-              opacity: resultFadeAnim,
-              transform: [{ scale: resultScaleAnim }],
+          <TouchableOpacity
+            style={styles.tryAgainButton}
+            onPress={() => {
+              console.log("Try again pressed - loading new question");
+              loadNextQuestion();
             }}
+            activeOpacity={0.8}
           >
-            <TouchableOpacity
-              style={styles.tryAgainButton}
-              onPress={() => {
-                console.log("Try again pressed - loading new question");
-                Animated.parallel([
-                  Animated.timing(fadeAnim, {
-                    toValue: 0,
-                    duration: 200,
-                    useNativeDriver: true,
-                  }),
-                  Animated.timing(scaleAnim, {
-                    toValue: 0.95,
-                    duration: 200,
-                    useNativeDriver: true,
-                  }),
-                ]).start(() => {
-                  loadNextQuestion();
-                  Animated.parallel([
-                    Animated.timing(fadeAnim, {
-                      toValue: 1,
-                      duration: 300,
-                      useNativeDriver: true,
-                    }),
-                    Animated.spring(scaleAnim, {
-                      toValue: 1,
-                      friction: 8,
-                      tension: 40,
-                      useNativeDriver: true,
-                    }),
-                  ]).start();
-                });
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.tryAgainButtonText}>Try Again</Text>
-            </TouchableOpacity>
-          </Animated.View>
+            <Text style={styles.tryAgainButtonText}>Try Again</Text>
+          </TouchableOpacity>
         )}
       </View>
     </View>

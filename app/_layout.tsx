@@ -4,6 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { LearnLockProvider } from "@/contexts/MindGateContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { TouchableOpacity } from "react-native";
 import { Home } from "lucide-react-native";
 
@@ -75,11 +76,13 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <LearnLockProvider>
-        <GestureHandlerRootView>
-          <RootLayoutNav />
-        </GestureHandlerRootView>
-      </LearnLockProvider>
+      <ThemeProvider>
+        <LearnLockProvider>
+          <GestureHandlerRootView>
+            <RootLayoutNav />
+          </GestureHandlerRootView>
+        </LearnLockProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

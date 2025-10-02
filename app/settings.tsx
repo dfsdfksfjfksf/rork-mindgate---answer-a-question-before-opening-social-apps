@@ -2,10 +2,11 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInp
 import { useState, useEffect } from "react";
 import { Stack, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft, Save } from "lucide-react-native";
-import { colors, spacing } from "@/constants/colors";
+import { ArrowLeft, Save, Moon, Sun } from "lucide-react-native";
+import { spacing } from "@/constants/colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLearnLock } from "@/contexts/MindGateContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const SETTINGS_KEY = "learnlock_settings";
 
@@ -24,6 +25,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { appAssignments, updateAppAssignment } = useLearnLock();
+  const { theme, colors, toggleTheme } = useTheme();
   const [requireStreak, setRequireStreak] = useState<string>("1");
   const [cooldownSeconds, setCooldownSeconds] = useState<string>("5");
   const [applyToExisting, setApplyToExisting] = useState<boolean>(false);
@@ -96,30 +98,58 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.ink }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.header, { paddingTop: Platform.OS === "web" ? 60 : insets.top + 20 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+      <View style={[styles.header, { paddingTop: Platform.OS === "web" ? 60 : insets.top + 20, borderBottomColor: colors.glassBorder }]}>
+        <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
           <ArrowLeft size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>settings</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>settings</Text>
         <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>default app settings</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>appearance</Text>
+          <View style={[styles.settingCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
+            <View style={styles.settingRow}>
+              <View style={styles.settingHeaderInRow}>
+                <View style={styles.themeIconRow}>
+                  {theme === 'dark' ? (
+                    <Moon size={20} color={colors.mint} />
+                  ) : (
+                    <Sun size={20} color={colors.mint} />
+                  )}
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+                    {theme === 'dark' ? 'dark mode' : 'light mode'}
+                  </Text>
+                </View>
+                <Text style={[styles.settingHint, { color: colors.textMuted }]}>Toggle app appearance</Text>
+              </View>
+              <Switch
+                value={theme === 'dark'}
+                onValueChange={toggleTheme}
+                trackColor={{ false: colors.glass, true: colors.mint }}
+                thumbColor="#fff"
+                ios_backgroundColor={colors.glass}
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>default app settings</Text>
           <Text style={styles.sectionDescription}>
             These settings will be used as defaults when creating new app assignments
           </Text>
 
-          <View style={styles.settingCard}>
+          <View style={[styles.settingCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
             <View style={styles.settingHeader}>
-              <Text style={styles.settingLabel}>minimum correct answers</Text>
-              <Text style={styles.settingHint}>How many questions to answer correctly</Text>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>minimum correct answers</Text>
+              <Text style={[styles.settingHint, { color: colors.textMuted }]}>How many questions to answer correctly</Text>
             </View>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.glass, borderColor: colors.glassBorder, color: colors.text }]}
               value={requireStreak}
               onChangeText={setRequireStreak}
               keyboardType="number-pad"
@@ -128,13 +158,13 @@ export default function SettingsScreen() {
             />
           </View>
 
-          <View style={styles.settingCard}>
+          <View style={[styles.settingCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
             <View style={styles.settingHeader}>
-              <Text style={styles.settingLabel}>retry wait time (seconds)</Text>
-              <Text style={styles.settingHint}>Cooldown after wrong answer</Text>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>retry wait time (seconds)</Text>
+              <Text style={[styles.settingHint, { color: colors.textMuted }]}>Cooldown after wrong answer</Text>
             </View>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.glass, borderColor: colors.glassBorder, color: colors.text }]}
               value={cooldownSeconds}
               onChangeText={setCooldownSeconds}
               keyboardType="number-pad"
@@ -143,11 +173,11 @@ export default function SettingsScreen() {
             />
           </View>
 
-          <View style={styles.settingCard}>
+          <View style={[styles.settingCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
             <View style={styles.settingRow}>
               <View style={styles.settingHeaderInRow}>
-                <Text style={styles.settingLabel}>apply to existing apps</Text>
-                <Text style={styles.settingHint}>Update all current app assignments</Text>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>apply to existing apps</Text>
+                <Text style={[styles.settingHint, { color: colors.textMuted }]}>Update all current app assignments</Text>
               </View>
               <Switch
                 value={applyToExisting}
@@ -161,7 +191,7 @@ export default function SettingsScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+          style={[styles.saveButton, { backgroundColor: colors.mint }, isSaving && styles.saveButtonDisabled]}
           onPress={saveSettings}
           disabled={isSaving}
           activeOpacity={0.8}
@@ -177,7 +207,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.ink,
   },
   header: {
     flexDirection: "row" as const,
@@ -186,22 +215,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: colors.glassBorder,
   },
   backButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.glass,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "600" as const,
-    color: colors.text,
   },
   headerSpacer: {
     width: 44,
@@ -216,23 +241,19 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: "500" as const,
-    color: colors.textMuted,
     textTransform: "uppercase" as const,
     letterSpacing: 1,
     marginBottom: 8,
   },
   sectionDescription: {
     fontSize: 14,
-    color: colors.textMuted,
     lineHeight: 20,
     marginBottom: 20,
   },
   settingCard: {
-    backgroundColor: colors.glass,
     borderRadius: spacing.borderRadius.card,
     padding: 20,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
     marginBottom: 16,
   },
   settingRow: {
@@ -250,31 +271,31 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 16,
     fontWeight: "600" as const,
-    color: colors.text,
     marginBottom: 4,
   },
   settingHint: {
     fontSize: 13,
-    color: colors.textMuted,
   },
   input: {
-    backgroundColor: "rgba(255, 255, 255, 0.03)",
     borderRadius: spacing.borderRadius.button,
     padding: 14,
     fontSize: 16,
-    color: colors.text,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
   },
   saveButton: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     gap: 10,
-    backgroundColor: colors.mint,
     borderRadius: spacing.borderRadius.button,
     padding: 18,
     marginTop: 20,
+  },
+  themeIconRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 8,
+    marginBottom: 4,
   },
   saveButtonDisabled: {
     opacity: 0.5,

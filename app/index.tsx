@@ -2,13 +2,15 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Animate
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { BookOpen, Smartphone, Settings, Sliders } from "lucide-react-native";
+import { BookOpen, Smartphone, Settings, Sliders, Lock } from "lucide-react-native";
 import { useLearnLock } from "@/contexts/MindGateContext";
-import { colors, spacing } from "@/constants/colors";
+import { useTheme } from "@/contexts/ThemeContext";
+import { spacing } from "@/constants/colors";
 import { useEffect, useRef } from "react";
 
 export default function DashboardScreen() {
   const { todayAttempts, todayAccuracy, quizSets, appAssignments } = useLearnLock();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -24,61 +26,71 @@ export default function DashboardScreen() {
   }, [fadeAnim]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.ink }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.background, { paddingTop: Platform.OS === "web" ? 60 : insets.top + 20 }]}>
+      <View style={[styles.background, { backgroundColor: colors.ink, paddingTop: Platform.OS === "web" ? 60 : insets.top + 20 }]}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
-            <Text style={styles.title}>LearnLock</Text>
-            <Text style={styles.subtitle}>learn a little, then scroll a lot smarter</Text>
+            <View style={styles.logoContainer}>
+              <LinearGradient
+                colors={[colors.gradient.start, colors.gradient.end]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.logoGradient}
+              >
+                <Lock size={48} color="#fff" strokeWidth={2.5} />
+              </LinearGradient>
+            </View>
+            <Text style={[styles.title, { color: colors.text }]}>LearnLock</Text>
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>learn a little, then scroll a lot smarter</Text>
           </Animated.View>
 
           <Animated.View style={[styles.statsContainer, { opacity: fadeAnim }]}>
-            <Text style={styles.statsTitle}>today</Text>
+            <Text style={[styles.statsTitle, { color: colors.textMuted }]}>today</Text>
             <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{todayAccuracy}%</Text>
-                <Text style={styles.statLabel}>accuracy</Text>
+              <View style={[styles.statCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
+                <Text style={[styles.statValue, { color: colors.text }]}>{todayAccuracy}%</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>accuracy</Text>
               </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{todayAttempts.length}</Text>
-                <Text style={styles.statLabel}>attempts</Text>
+              <View style={[styles.statCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
+                <Text style={[styles.statValue, { color: colors.text }]}>{todayAttempts.length}</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>attempts</Text>
               </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{timeSavedMinutes}m</Text>
-                <Text style={styles.statLabel}>time saved</Text>
+              <View style={[styles.statCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
+                <Text style={[styles.statValue, { color: colors.text }]}>{timeSavedMinutes}m</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>time saved</Text>
               </View>
             </View>
           </Animated.View>
 
           <View style={styles.tilesContainer}>
             <TouchableOpacity style={styles.tile} activeOpacity={0.8} onPress={() => router.push("/quizzes")}>
-              <View style={styles.glassCard}>
+              <View style={[styles.glassCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
                 <View style={styles.tileIcon}>
                   <BookOpen size={28} color={colors.mint} strokeWidth={2} />
                 </View>
-                <Text style={styles.tileTitle}>quizzes</Text>
-                <Text style={styles.tileSubtitle}>{quizSets.length} sets</Text>
+                <Text style={[styles.tileTitle, { color: colors.text }]}>quizzes</Text>
+                <Text style={[styles.tileSubtitle, { color: colors.textMuted }]}>{quizSets.length} sets</Text>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.tile} activeOpacity={0.8} onPress={() => router.push("/apps")}>
-              <View style={styles.glassCard}>
+              <View style={[styles.glassCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
                 <View style={styles.tileIcon}>
                   <Smartphone size={28} color={colors.lilac} strokeWidth={2} />
                 </View>
-                <Text style={styles.tileTitle}>apps</Text>
-                <Text style={styles.tileSubtitle}>{enabledAssignments.length} active</Text>
+                <Text style={[styles.tileTitle, { color: colors.text }]}>apps</Text>
+                <Text style={[styles.tileSubtitle, { color: colors.textMuted }]}>{enabledAssignments.length} active</Text>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.tile} activeOpacity={0.8} onPress={() => router.push("/settings")}>
-              <View style={styles.glassCard}>
+              <View style={[styles.glassCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
                 <View style={styles.tileIcon}>
                   <Sliders size={28} color={colors.peach} strokeWidth={2} />
                 </View>
-                <Text style={styles.tileTitle}>settings</Text>
-                <Text style={styles.tileSubtitle}>customize defaults</Text>
+                <Text style={[styles.tileTitle, { color: colors.text }]}>settings</Text>
+                <Text style={[styles.tileSubtitle, { color: colors.textMuted }]}>customize defaults</Text>
               </View>
             </TouchableOpacity>
 
@@ -99,7 +111,7 @@ export default function DashboardScreen() {
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>local-first • you&apos;re in control</Text>
+            <Text style={[styles.footerText, { color: colors.textMuted }]}>local-first • you&apos;re in control</Text>
           </View>
         </ScrollView>
       </View>
@@ -110,11 +122,9 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.ink,
   },
   background: {
     flex: 1,
-    backgroundColor: colors.ink,
   },
   scrollContent: {
     padding: 24,
@@ -124,16 +134,24 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     alignItems: "center" as const,
   },
+  logoContainer: {
+    marginBottom: 20,
+  },
+  logoGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
   title: {
     fontSize: 36,
     fontWeight: "600" as const,
-    color: colors.text,
     marginBottom: 8,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 15,
-    color: colors.textMuted,
     textAlign: "center" as const,
     lineHeight: 22,
   },
@@ -143,7 +161,6 @@ const styles = StyleSheet.create({
   statsTitle: {
     fontSize: 13,
     fontWeight: "500" as const,
-    color: colors.textMuted,
     textTransform: "uppercase" as const,
     letterSpacing: 1,
     marginBottom: 16,
@@ -154,22 +171,18 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.glass,
     borderRadius: spacing.borderRadius.card,
     padding: 20,
     alignItems: "center" as const,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
   },
   statValue: {
     fontSize: 28,
     fontWeight: "600" as const,
-    color: colors.text,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: colors.textMuted,
     fontWeight: "500" as const,
     letterSpacing: 0.5,
   },
@@ -181,13 +194,11 @@ const styles = StyleSheet.create({
     overflow: "hidden" as const,
   },
   glassCard: {
-    backgroundColor: colors.glass,
     borderRadius: spacing.borderRadius.card,
     padding: 24,
     minHeight: 140,
     justifyContent: "center" as const,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
   },
   tileIcon: {
     marginBottom: 12,
@@ -195,12 +206,10 @@ const styles = StyleSheet.create({
   tileTitle: {
     fontSize: 22,
     fontWeight: "600" as const,
-    color: colors.text,
     marginBottom: 4,
   },
   tileSubtitle: {
     fontSize: 14,
-    color: colors.textMuted,
     fontWeight: "500" as const,
   },
   setupTile: {
@@ -231,7 +240,6 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: colors.textMuted,
     opacity: 0.6,
   },
 });
