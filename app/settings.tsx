@@ -1,27 +1,32 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput, Switch } from "react-native";
 import { useState, useEffect } from "react";
 import { Stack, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, Save } from "lucide-react-native";
 import { colors, spacing } from "@/constants/colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLearnLock } from "@/contexts/MindGateContext";
 
 const SETTINGS_KEY = "learnlock_settings";
 
 export interface AppSettings {
   defaultRequireStreak: number;
   defaultCooldownSeconds: number;
+  applyToExisting: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   defaultRequireStreak: 1,
   defaultCooldownSeconds: 5,
+  applyToExisting: false,
 };
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const { appAssignments, updateAppAssignment } = useLearnLock();
   const [requireStreak, setRequireStreak] = useState<string>("1");
   const [cooldownSeconds, setCooldownSeconds] = useState<string>("5");
+  const [applyToExisting, setApplyToExisting] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   useEffect(() => {
@@ -35,6 +40,7 @@ export default function SettingsScreen() {
         const settings: AppSettings = JSON.parse(stored);
         setRequireStreak(settings.defaultRequireStreak.toString());
         setCooldownSeconds(settings.defaultCooldownSeconds.toString());
+        setApplyToExisting(settings.applyToExisting ?? false);
       }
     } catch (error) {
       console.error("Failed to load settings:", error);
@@ -62,9 +68,21 @@ export default function SettingsScreen() {
       const settings: AppSettings = {
         defaultRequireStreak: streak,
         defaultCooldownSeconds: cooldown,
+        applyToExisting,
       };
 
       await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+
+      if (applyToExisting) {
+        console.log("Applying settings to all existing app assignments...");
+        for (const assignment of appAssignments) {
+          await updateAppAssignment(assignment.id, {
+            requireStreak: streak,
+            cooldownSeconds: cooldown,
+          });
+        }
+        console.log("Updated", appAssignments.length, "app assignments");
+      }
       
       setTimeout(() => {
         setIsSaving(false);
@@ -123,6 +141,22 @@ export default function SettingsScreen() {
               placeholder="5"
               placeholderTextColor={colors.textMuted}
             />
+          </View>
+
+          <View style={styles.settingCard}>
+            <View style={styles.settingRow}>
+              <View style={styles.settingHeaderInRow}>
+                <Text style={styles.settingLabel}>apply to existing apps</Text>
+                <Text style={styles.settingHint}>Update all current app assignments</Text>
+              </View>
+              <Switch
+                value={applyToExisting}
+                onValueChange={setApplyToExisting}
+                trackColor={{ false: colors.glass, true: colors.mint }}
+                thumbColor="#fff"
+                ios_backgroundColor={colors.glass}
+              />
+            </View>
           </View>
         </View>
 
@@ -201,8 +235,17 @@ const styles = StyleSheet.create({
     borderColor: colors.glassBorder,
     marginBottom: 16,
   },
+  settingRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+  },
   settingHeader: {
     marginBottom: 12,
+  },
+  settingHeaderInRow: {
+    flex: 1,
+    marginRight: 16,
   },
   settingLabel: {
     fontSize: 16,

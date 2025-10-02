@@ -2,12 +2,16 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform, Linking,
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocalSearchParams, Stack, router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { CheckCircle, XCircle, ExternalLink, AlertCircle, Lock, ArrowLeft, Home } from "lucide-react-native";
+import { CheckCircle, XCircle, ExternalLink, AlertCircle, Lock, ArrowLeft, Home, RefreshCw } from "lucide-react-native";
 import { useLearnLock } from "@/contexts/MindGateContext";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, spacing } from "@/constants/colors";
 import type { Question } from "@/types";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { AppSettings } from "./settings";
+
+const SETTINGS_KEY = "learnlock_settings";
 
 export default function GateScreen() {
   const { app } = useLocalSearchParams<{ app: string }>();
@@ -36,9 +40,13 @@ export default function GateScreen() {
   const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
   const cooldownProgress = useRef(new Animated.Value(1)).current;
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [isCheckingAnswer, setIsCheckingAnswer] = useState<boolean>(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const successFadeAnim = useRef(new Animated.Value(0)).current;
+  const successScaleAnim = useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -57,10 +65,25 @@ export default function GateScreen() {
   }, [fadeAnim, scaleAnim]);
 
   useEffect(() => {
+    loadSettings();
+  }, []);
+
+  useEffect(() => {
     if (questions.length > 0 && !currentQuestion) {
       loadNextQuestion();
     }
   }, [questions, currentQuestion]);
+
+  const loadSettings = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(SETTINGS_KEY);
+      if (stored) {
+        setSettings(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error("Failed to load settings:", error);
+    }
+  };
 
   useEffect(() => {
     if (cooldownRemaining > 0) {
@@ -73,7 +96,8 @@ export default function GateScreen() {
 
   useEffect(() => {
     if (cooldownRemaining > 0 && assignment) {
-      const progress = cooldownRemaining / assignment.cooldownSeconds;
+      const effectiveCooldown = settings?.defaultCooldownSeconds ?? assignment.cooldownSeconds;
+      const progress = cooldownRemaining / effectiveCooldown;
       Animated.timing(cooldownProgress, {
         toValue: progress,
         duration: 1000,
@@ -82,7 +106,28 @@ export default function GateScreen() {
     } else {
       cooldownProgress.setValue(1);
     }
-  }, [cooldownRemaining, assignment, cooldownProgress]);
+  }, [cooldownRemaining, assignment, cooldownProgress, settings]);
+
+  useEffect(() => {
+    if (showSuccess) {
+      Animated.parallel([
+        Animated.timing(successFadeAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.spring(successScaleAnim, {
+          toValue: 1,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      successFadeAnim.setValue(0);
+      successScaleAnim.setValue(0.9);
+    }
+  }, [showSuccess, successFadeAnim, successScaleAnim]);
 
   const loadNextQuestion = () => {
     if (questions.length === 0) return;
@@ -107,7 +152,10 @@ export default function GateScreen() {
   };
 
   const checkAnswer = async () => {
-    if (!currentQuestion || !assignment || !userAnswer.trim()) return;
+    if (!currentQuestion || !assignment || !userAnswer.trim() || isCheckingAnswer) return;
+
+    setIsCheckingAnswer(true);
+    console.log("Checking answer:", userAnswer);
 
     let correct = false;
 
@@ -120,6 +168,7 @@ export default function GateScreen() {
       );
     }
 
+    console.log("Answer is correct:", correct);
     setIsCorrect(correct);
     setShowResult(true);
 
@@ -142,19 +191,24 @@ export default function GateScreen() {
       const newStreak = currentStreak + 1;
       setCurrentStreak(newStreak);
 
-      if (newStreak >= assignment.requireStreak) {
+      const effectiveRequireStreak = settings?.defaultRequireStreak ?? assignment.requireStreak;
+      if (newStreak >= effectiveRequireStreak) {
         setTimeout(() => {
           setShowSuccess(true);
+          setIsCheckingAnswer(false);
         }, 800);
       } else {
         setTimeout(() => {
           loadNextQuestion();
+          setIsCheckingAnswer(false);
         }, 1500);
       }
     } else {
       setCurrentStreak(0);
-      const cooldown = assignment.cooldownSeconds > 0 ? assignment.cooldownSeconds : 5;
+      const effectiveCooldown = settings?.defaultCooldownSeconds ?? assignment.cooldownSeconds;
+      const cooldown = effectiveCooldown > 0 ? effectiveCooldown : 5;
       setCooldownRemaining(cooldown);
+      setIsCheckingAnswer(false);
     }
   };
 
@@ -283,23 +337,45 @@ export default function GateScreen() {
           end={{ x: 1, y: 1 }}
           style={styles.successGradient}
         >
-          <View style={styles.successContainer}>
+          <Animated.View 
+            style={[
+              styles.successContainer,
+              {
+                opacity: successFadeAnim,
+                transform: [{ scale: successScaleAnim }],
+              },
+            ]}
+          >
             <CheckCircle size={80} color="#fff" strokeWidth={2.5} />
             <Text style={styles.successTitle}>unlocked ✓</Text>
             <Text style={styles.successText}>
               nice! continue to {app}.
             </Text>
-            {assignment.schemeOrStoreURL ? (
-              <TouchableOpacity style={styles.continueButton} onPress={handleContinue} activeOpacity={0.8}>
-                <ExternalLink size={24} color="#fff" />
-                <Text style={styles.continueButtonText}>Continue to {app}</Text>
+            <View style={styles.successButtonsContainer}>
+              {assignment.schemeOrStoreURL ? (
+                <TouchableOpacity style={styles.continueButton} onPress={handleContinue} activeOpacity={0.8}>
+                  <ExternalLink size={24} color="#fff" />
+                  <Text style={styles.continueButtonText}>Continue to {app}</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.noUrlText}>
+                  Add an app link in App Assignments to continue
+                </Text>
+              )}
+              <TouchableOpacity 
+                style={styles.anotherQuestionButton} 
+                onPress={() => {
+                  setShowSuccess(false);
+                  setCurrentStreak(0);
+                  loadNextQuestion();
+                }} 
+                activeOpacity={0.8}
+              >
+                <RefreshCw size={20} color="#fff" />
+                <Text style={styles.anotherQuestionButtonText}>Answer Another Question</Text>
               </TouchableOpacity>
-            ) : (
-              <Text style={styles.noUrlText}>
-                Add an app link in App Assignments to continue
-              </Text>
-            )}
-          </View>
+            </View>
+          </Animated.View>
         </LinearGradient>
       </View>
     );
@@ -484,9 +560,8 @@ export default function GateScreen() {
           <TouchableOpacity
             style={styles.tryAgainButton}
             onPress={() => {
-              setShowResult(false);
-              setUserAnswer("");
-              setIsCorrect(false);
+              console.log("Try again pressed - loading new question");
+              loadNextQuestion();
             }}
             activeOpacity={0.8}
           >
@@ -700,6 +775,11 @@ const styles = StyleSheet.create({
     alignItems: "center" as const,
     padding: 40,
   },
+  successButtonsContainer: {
+    width: '100%',
+    gap: 16,
+    alignItems: "center" as const,
+  },
   successTitle: {
     fontSize: 40,
     fontWeight: "600" as const,
@@ -778,5 +858,21 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600" as const,
     color: colors.mint,
+  },
+  anotherQuestionButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: spacing.borderRadius.button,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+  },
+  anotherQuestionButtonText: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: "#fff",
   },
 });
