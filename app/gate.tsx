@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform, Linking, Animated, AccessibilityInfo } from "react-native";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useLocalSearchParams, Stack, router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { CheckCircle, XCircle, ExternalLink, AlertCircle, Lock, ArrowLeft, Home, RefreshCw } from "lucide-react-native";
@@ -64,6 +64,7 @@ export default function GateScreen() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isCheckingAnswer, setIsCheckingAnswer] = useState<boolean>(false);
   const [reduceMotionEnabled, setReduceMotionEnabled] = useState<boolean>(false);
+  const [isLoadingNewQuestion, setIsLoadingNewQuestion] = useState<boolean>(false);
   const resultFadeAnim = useRef(new Animated.Value(0)).current;
   const resultScaleAnim = useRef(new Animated.Value(0.95)).current;
 
@@ -172,7 +173,7 @@ export default function GateScreen() {
     }
   }, [showSuccess, successFadeAnim, successScaleAnim]);
 
-  const loadNextQuestion = () => {
+  const loadNextQuestion = useCallback(() => {
     if (questions.length === 0) return;
 
     console.log("Loading next question...");
@@ -190,6 +191,7 @@ export default function GateScreen() {
       }
     }
 
+    // Batch state updates to prevent multiple re-renders
     setCurrentQuestion(nextQuestion);
     setUserAnswer("");
     setShowResult(false);
@@ -197,9 +199,9 @@ export default function GateScreen() {
     setIsCheckingAnswer(false);
     setCooldownRemaining(0);
     console.log("Next question loaded:", nextQuestion.prompt);
-  };
+  }, [questions, assignment?.randomize]);
 
-  const checkAnswer = async (answer?: string) => {
+  const checkAnswer = useCallback(async (answer?: string) => {
     const answerToCheck = answer || userAnswer;
     if (!currentQuestion || !assignment || !answerToCheck.trim() || isCheckingAnswer) return;
 
@@ -278,7 +280,7 @@ export default function GateScreen() {
       setCooldownRemaining(cooldown);
       setIsCheckingAnswer(false);
     }
-  };
+  }, [currentQuestion, assignment, userAnswer, isCheckingAnswer, addAttempt, settings, loadNextQuestion]);
 
   const handleContinue = async () => {
     // Check for Preview mode
@@ -706,14 +708,33 @@ export default function GateScreen() {
 
         {showResult && !isCorrect && cooldownRemaining === 0 && (
           <TouchableOpacity
-            style={styles.tryAgainButton}
+            style={[styles.tryAgainButton, isLoadingNewQuestion && styles.tryAgainButtonDisabled]}
             onPress={() => {
+              if (isLoadingNewQuestion) return;
+              
               console.log("Try again pressed - loading new question");
-              loadNextQuestion();
+              setIsLoadingNewQuestion(true);
+              
+              // Reset states immediately for better responsiveness
+              setShowResult(false);
+              setUserAnswer("");
+              setIsCorrect(false);
+              
+              // Load next question after a brief delay to prevent UI lag
+              setTimeout(() => {
+                loadNextQuestion();
+                setIsLoadingNewQuestion(false);
+              }, 100);
             }}
+            disabled={isLoadingNewQuestion}
             activeOpacity={0.8}
+            accessible={true}
+            accessibilityLabel="Try again with a new question"
+            accessibilityRole="button"
           >
-            <Text style={styles.tryAgainButtonText}>Try Again</Text>
+            <Text style={[styles.tryAgainButtonText, isLoadingNewQuestion && styles.tryAgainButtonTextDisabled]}>
+              {isLoadingNewQuestion ? "Loading..." : "Try Again"}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -1023,6 +1044,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600" as const,
     color: colors.mint,
+  },
+  tryAgainButtonDisabled: {
+    opacity: 0.6,
+  },
+  tryAgainButtonTextDisabled: {
+    color: "#999",
   },
   anotherQuestionButton: {
     flexDirection: "row" as const,
