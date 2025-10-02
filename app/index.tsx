@@ -2,11 +2,11 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Animate
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { Settings, Lock, CheckCircle, Circle, Plus, FileText, Play, Target } from "lucide-react-native";
+import { Settings, Lock, CheckCircle, Circle, Plus, FileText, Play } from "lucide-react-native";
 import { useLearnLock } from "@/contexts/MindGateContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { spacing } from "@/constants/colors";
-import { useEffect, useRef, useMemo, memo } from "react";
+import { useEffect, useRef, useMemo, memo, useCallback } from "react";
 
 // Memoized stat chip component
 const StatChip = memo(function StatChip({ value, label, colors, onPress }: { value: string | number; label: string; colors: any; onPress?: () => void }) {
@@ -20,6 +20,35 @@ const StatChip = memo(function StatChip({ value, label, colors, onPress }: { val
     <Text style={[styles.statChipValue, { color: colors.text }]}>{value}</Text>
     <Text style={[styles.statChipLabel, { color: colors.textMuted }]}>{label}</Text>
   </TouchableOpacity>
+  );
+});
+
+// Memoized app chip component
+const AppChip = memo(function AppChip({ assignment, colors }: { assignment: any; colors: any }) {
+  const chipStyle = useMemo(() => [
+    styles.appChip, 
+    { 
+      backgroundColor: assignment.setupCompleted ? "rgba(68, 224, 201, 0.1)" : colors.glass,
+      borderColor: assignment.setupCompleted ? colors.mint : colors.glassBorder 
+    }
+  ], [assignment.setupCompleted, colors.glass, colors.glassBorder, colors.mint]);
+
+  const textStyle = useMemo(() => [
+    styles.appChipText, 
+    { color: assignment.setupCompleted ? colors.mint : colors.textMuted }
+  ], [assignment.setupCompleted, colors.mint, colors.textMuted]);
+
+  return (
+    <View style={chipStyle}>
+      {assignment.setupCompleted ? (
+        <CheckCircle size={14} color={colors.mint} />
+      ) : (
+        <Circle size={14} color={colors.textMuted} />
+      )}
+      <Text style={textStyle}>
+        {assignment.appName}
+      </Text>
+    </View>
   );
 });
 
@@ -46,8 +75,12 @@ export default function DashboardScreen() {
   );
 
   const bestStreak = useMemo(() => {
+    if (attempts.length === 0) return 0;
+    
     let maxStreak = 0;
     let currentStreak = 0;
+    
+    // Sort only once and reuse
     const sortedAttempts = [...attempts].sort((a, b) => a.timestamp - b.timestamp);
     
     for (const attempt of sortedAttempts) {
@@ -62,20 +95,38 @@ export default function DashboardScreen() {
   }, [attempts]);
 
   const dailyGoal = 5;
-  const answeredToday = todayAttempts.filter(a => a.isCorrect).length;
+  
+  const answeredToday = useMemo(() => 
+    todayAttempts.filter(a => a.isCorrect).length,
+    [todayAttempts]
+  );
 
-  const lastFailedApp = useMemo(() => {
-    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-    const recentFails = attempts
-      .filter(a => !a.isCorrect && a.timestamp >= oneDayAgo)
-      .sort((a, b) => b.timestamp - a.timestamp);
-    
-    if (recentFails.length > 0) {
-      const assignment = appAssignments.find(a => a.id === recentFails[0].appAssignmentId);
-      return assignment?.appName;
-    }
-    return null;
-  }, [attempts, appAssignments]);
+
+  // Memoized navigation callbacks
+  const handleSettingsPress = useCallback(() => {
+    router.push("/settings");
+  }, []);
+
+  const handleSetupPress = useCallback(() => {
+    router.push("/setup");
+  }, []);
+
+  const handlePreviewGatePress = useCallback(() => {
+    router.push("/gate?app=Preview");
+  }, []);
+
+  const handleAppsPress = useCallback(() => {
+    router.push("/apps");
+  }, []);
+
+  const handleQuizzesPress = useCallback(() => {
+    router.push("/quizzes");
+  }, []);
+
+  const handleTestGate = useCallback((appName: string) => {
+    router.push(`/gate?app=${appName}`);
+  }, []);
+
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -101,7 +152,7 @@ export default function DashboardScreen() {
             </View>
             <TouchableOpacity 
               style={[styles.settingsButton, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}
-              onPress={() => router.push("/settings")}
+              onPress={handleSettingsPress}
               activeOpacity={0.7}
             >
               <Settings size={20} color={colors.text} />
@@ -113,7 +164,7 @@ export default function DashboardScreen() {
             {!allSetupsComplete && enabledAssignments.length > 0 ? (
               <TouchableOpacity 
                 style={styles.primaryCta}
-                onPress={() => router.push("/setup")}
+                onPress={handleSetupPress}
                 activeOpacity={0.8}
               >
                 <LinearGradient
@@ -130,7 +181,7 @@ export default function DashboardScreen() {
               <View style={styles.ctaGroup}>
                 <TouchableOpacity 
                   style={styles.primaryCta}
-                  onPress={() => router.push("/gate?app=Preview")}
+                  onPress={handlePreviewGatePress}
                   activeOpacity={0.8}
                 >
                   <LinearGradient
@@ -143,7 +194,7 @@ export default function DashboardScreen() {
                   </LinearGradient>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  onPress={() => router.push("/gate?app=Preview")}
+                  onPress={handlePreviewGatePress}
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.secondaryLink, { color: colors.mint }]}>Preview gate</Text>
@@ -154,7 +205,14 @@ export default function DashboardScreen() {
 
           {/* Today Strip */}
           <Animated.View style={[styles.todayStrip, { opacity: fadeAnim }]}>
-            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>today</Text>
+            <View style={styles.todayHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>today's progress</Text>
+              <View style={[styles.todayBadge, { backgroundColor: answeredToday >= dailyGoal ? "rgba(68, 224, 201, 0.2)" : "rgba(255, 255, 255, 0.1)" }]}>
+                <Text style={[styles.todayBadgeText, { color: answeredToday >= dailyGoal ? colors.mint : colors.textMuted }]}>
+                  {answeredToday >= dailyGoal ? "Goal reached! 🎉" : `${dailyGoal - answeredToday} to go`}
+                </Text>
+              </View>
+            </View>
             <View style={styles.chipsRow}>
               <StatChip value={`${todayAccuracy}%`} label="accuracy" colors={colors} />
               <StatChip value={todayAttempts.length} label="attempts" colors={colors} />
@@ -170,48 +228,6 @@ export default function DashboardScreen() {
             </View>
           </Animated.View>
 
-          {/* Automations Card */}
-          {enabledAssignments.length > 0 && (
-            <View style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
-              <View style={styles.cardHeader}>
-                <View>
-                  <Text style={[styles.cardTitle, { color: colors.text }]}>automations</Text>
-                  <Text style={[styles.cardSubtext, { color: colors.textMuted }]}>
-                    {allSetupsComplete ? "All set 🎉" : `${setupCompletedCount}/${enabledAssignments.length} set up`}
-                  </Text>
-                </View>
-                {!allSetupsComplete && (
-                  <TouchableOpacity 
-                    style={[styles.cardButton, { backgroundColor: colors.mint }]}
-                    onPress={() => router.push("/setup")}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.cardButtonText}>Complete setup</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <View style={styles.appChipsContainer}>
-                {enabledAssignments.map((assignment) => (
-                  <View 
-                    key={assignment.id} 
-                    style={[styles.appChip, { 
-                      backgroundColor: assignment.setupCompleted ? "rgba(68, 224, 201, 0.1)" : colors.glass,
-                      borderColor: assignment.setupCompleted ? colors.mint : colors.glassBorder 
-                    }]}
-                  >
-                    {assignment.setupCompleted ? (
-                      <CheckCircle size={14} color={colors.mint} />
-                    ) : (
-                      <Circle size={14} color={colors.textMuted} />
-                    )}
-                    <Text style={[styles.appChipText, { color: assignment.setupCompleted ? colors.mint : colors.textMuted }]}>
-                      {assignment.appName}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
 
           {/* Quizzes Card */}
           <View style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
@@ -233,7 +249,7 @@ export default function DashboardScreen() {
             <View style={styles.inlineActions}>
               <TouchableOpacity 
                 style={[styles.inlineActionButton, { borderColor: colors.glassBorder }]}
-                onPress={() => router.push("/quizzes")}
+                onPress={handleQuizzesPress}
                 activeOpacity={0.7}
               >
                 <Plus size={16} color={colors.mint} />
@@ -241,7 +257,7 @@ export default function DashboardScreen() {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.inlineActionButton, { borderColor: colors.glassBorder }]}
-                onPress={() => router.push("/quizzes")}
+                onPress={handleQuizzesPress}
                 activeOpacity={0.7}
               >
                 <FileText size={16} color={colors.lilac} />
@@ -251,61 +267,80 @@ export default function DashboardScreen() {
           </View>
 
           {/* Apps Card */}
-          <View style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>apps</Text>
+          <Animated.View style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.glassBorder, opacity: fadeAnim }]}>
+            <View style={styles.cardHeader}>
+              <View>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>protected apps</Text>
+                <Text style={[styles.cardSubtext, { color: colors.textMuted }]}>
+                  {enabledAssignments.length > 0 
+                    ? `${enabledAssignments.length} app${enabledAssignments.length > 1 ? 's' : ''} protected`
+                    : "Add apps to protect with learning gates"
+                  }
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={[styles.cardButton, { backgroundColor: colors.mint }]}
+                onPress={handleAppsPress}
+                activeOpacity={0.8}
+              >
+                <Plus size={16} color="#fff" />
+                <Text style={styles.cardButtonText}>Add apps</Text>
+              </TouchableOpacity>
+            </View>
+            
             {enabledAssignments.length > 0 ? (
-              <View style={styles.appsList}>
-                {enabledAssignments.slice(0, 3).map((assignment) => {
+              <View style={styles.appsGrid}>
+                {enabledAssignments.map((assignment) => {
                   const quizSet = quizSets.find(q => q.id === assignment.quizSetId);
                   return (
-                    <View key={assignment.id} style={styles.appRow}>
-                      <View style={styles.appRowLeft}>
-                        <Text style={[styles.appRowName, { color: colors.text }]}>{assignment.appName}</Text>
-                        <Text style={[styles.appRowQuiz, { color: colors.textMuted }]}>→ {quizSet?.name || "Unknown"}</Text>
+                    <View key={assignment.id} style={[styles.appCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
+                      <View style={styles.appCardHeader}>
+                        <View style={[styles.appIcon, { backgroundColor: assignment.setupCompleted ? "rgba(68, 224, 201, 0.2)" : "rgba(255, 255, 255, 0.1)" }]}>
+                          <Text style={[styles.appIconText, { color: assignment.setupCompleted ? colors.mint : colors.textMuted }]}>
+                            {assignment.appName.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={styles.appCardInfo}>
+                          <Text style={[styles.appCardName, { color: colors.text }]}>{assignment.appName}</Text>
+                          <Text style={[styles.appCardQuiz, { color: colors.textMuted }]}>{quizSet?.name || "No quiz set"}</Text>
+                        </View>
+                        {assignment.setupCompleted && (
+                          <View style={[styles.statusBadge, { backgroundColor: "rgba(68, 224, 201, 0.2)" }]}>
+                            <CheckCircle size={12} color={colors.mint} />
+                          </View>
+                        )}
                       </View>
                       <TouchableOpacity 
-                        style={[styles.testGateButton, { borderColor: colors.mint }]}
-                        onPress={() => router.push(`/gate?app=${assignment.appName}`)}
+                        style={[styles.testButton, { borderColor: colors.mint }]}
+                        onPress={() => handleTestGate(assignment.appName)}
                         activeOpacity={0.7}
                       >
-                        <Play size={14} color={colors.mint} />
-                        <Text style={[styles.testGateText, { color: colors.mint }]}>Test gate</Text>
+                        <Play size={12} color={colors.mint} />
+                        <Text style={[styles.testButtonText, { color: colors.mint }]}>Test gate</Text>
                       </TouchableOpacity>
                     </View>
                   );
                 })}
               </View>
             ) : (
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>No apps enabled yet</Text>
+              <View style={styles.emptyState}>
+                <Lock size={32} color={colors.textMuted} />
+                <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No apps protected yet</Text>
+                <Text style={[styles.emptyStateText, { color: colors.textMuted }]}>
+                  Add social media apps to create learning gates that help you build better habits
+                </Text>
+              </View>
             )}
-          </View>
+          </Animated.View>
 
-          {/* Continue Strip */}
-          <View style={[styles.continueCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
-            {lastFailedApp ? (
-              <TouchableOpacity 
-                style={styles.continueContent}
-                onPress={() => router.push(`/gate?app=${lastFailedApp}`)}
-                activeOpacity={0.8}
-              >
-                <Target size={20} color={colors.peach} />
-                <Text style={[styles.continueText, { color: colors.text }]}>Try again on {lastFailedApp}</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity 
-                style={styles.continueContent}
-                onPress={() => router.push("/gate?app=Preview")}
-                activeOpacity={0.8}
-              >
-                <Play size={20} color={colors.mint} />
-                <Text style={[styles.continueText, { color: colors.text }]}>Preview gate</Text>
-              </TouchableOpacity>
-            )}
-          </View>
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={[styles.footerText, { color: colors.textMuted }]}>local-first • you&apos;re in control</Text>
+            <View style={[styles.footerCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
+              <Lock size={16} color={colors.mint} />
+              <Text style={[styles.footerText, { color: colors.textMuted }]}>local-first • you're in control</Text>
+            </View>
+            <Text style={[styles.versionText, { color: colors.textMuted }]}>LearnLock v1.0.0</Text>
           </View>
         </ScrollView>
       </View>
@@ -393,12 +428,26 @@ const styles = StyleSheet.create({
   todayStrip: {
     marginBottom: 24,
   },
+  todayHeader: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
+    marginBottom: 12,
+  },
   sectionTitle: {
     fontSize: 11,
     fontWeight: "500" as const,
     textTransform: "uppercase" as const,
     letterSpacing: 1,
-    marginBottom: 12,
+  },
+  todayBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  todayBadgeText: {
+    fontSize: 11,
+    fontWeight: "600" as const,
   },
   chipsRow: {
     flexDirection: "row" as const,
@@ -560,27 +609,102 @@ const styles = StyleSheet.create({
     fontStyle: "italic" as const,
     marginTop: 8,
   },
-  continueCard: {
+  // New enhanced apps section styles
+  appsGrid: {
+    gap: 12,
+    marginTop: 4,
+  },
+  appCard: {
     borderRadius: spacing.borderRadius.card,
     padding: 16,
     borderWidth: 1,
-    marginBottom: 24,
   },
-  continueContent: {
+  appCardHeader: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: 12,
+    marginBottom: 12,
   },
-  continueText: {
+  appIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    marginRight: 12,
+  },
+  appIconText: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+  },
+  appCardInfo: {
+    flex: 1,
+  },
+  appCardName: {
     fontSize: 15,
-    fontWeight: "500" as const,
+    fontWeight: "600" as const,
+    marginBottom: 2,
+  },
+  appCardQuiz: {
+    fontSize: 12,
+  },
+  statusBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  testButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: spacing.borderRadius.button,
+    borderWidth: 1,
+  },
+  testButtonText: {
+    fontSize: 12,
+    fontWeight: "600" as const,
+  },
+  emptyState: {
+    alignItems: "center" as const,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    textAlign: "center" as const,
+    lineHeight: 20,
   },
   footer: {
-    marginTop: 24,
+    marginTop: 32,
     alignItems: "center" as const,
+    paddingBottom: 20,
+  },
+  footerCard: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: spacing.borderRadius.card,
+    borderWidth: 1,
+    marginBottom: 12,
   },
   footerText: {
     fontSize: 12,
-    opacity: 0.6,
+    fontWeight: "500" as const,
+  },
+  versionText: {
+    fontSize: 11,
+    opacity: 0.5,
   },
 });

@@ -5,7 +5,6 @@ import { colors, spacing } from "@/constants/colors";
 import NavigationHeader from "@/components/NavigationHeader";
 
 export default function FAQScreen() {
-  const insets = useSafeAreaInsets();
 
   const faqs = [
     {
@@ -43,8 +42,10 @@ export default function FAQScreen() {
   ];
 
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === "web" ? 60 : insets.top + 20 }]}>
+    <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
+      
+      <NavigationHeader title="FAQ" />
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>

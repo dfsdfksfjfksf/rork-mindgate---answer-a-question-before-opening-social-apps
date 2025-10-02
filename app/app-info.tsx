@@ -7,7 +7,6 @@ import Constants from "expo-constants";
 import NavigationHeader from "@/components/NavigationHeader";
 
 export default function AppInfoScreen() {
-  const insets = useSafeAreaInsets();
   const [marketingVersion, setMarketingVersion] = useState("1.0.0");
 
   const screenshotRequirements = [
@@ -19,8 +18,10 @@ export default function AppInfoScreen() {
   ];
 
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === "web" ? 60 : insets.top + 20 }]}>
+    <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
+      
+      <NavigationHeader title="App Information" />
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>

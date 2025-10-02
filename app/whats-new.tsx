@@ -5,7 +5,6 @@ import { colors, spacing } from "@/constants/colors";
 import NavigationHeader from "@/components/NavigationHeader";
 
 export default function WhatsNewScreen() {
-  const insets = useSafeAreaInsets();
 
   const updates = [
     {
@@ -25,8 +24,10 @@ export default function WhatsNewScreen() {
   ];
 
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === "web" ? 60 : insets.top + 20 }]}>
+    <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
+      
+      <NavigationHeader title="What's New" />
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
