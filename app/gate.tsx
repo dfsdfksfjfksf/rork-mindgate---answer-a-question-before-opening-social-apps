@@ -433,6 +433,19 @@ export default function GateScreen() {
             </LinearGradient>
           </TouchableOpacity>
         )}
+
+        {showResult && !isCorrect && cooldownRemaining === 0 && (
+          <TouchableOpacity
+            style={styles.tryAgainButton}
+            onPress={() => {
+              setShowResult(false);
+              setUserAnswer("");
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.tryAgainButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -691,5 +704,19 @@ const styles = StyleSheet.create({
     borderColor: colors.glassBorder,
     alignItems: "center" as const,
     justifyContent: "center" as const,
+  },
+  tryAgainButton: {
+    backgroundColor: colors.glass,
+    borderRadius: spacing.borderRadius.button,
+    padding: 18,
+    marginTop: 24,
+    borderWidth: 2,
+    borderColor: colors.mint,
+    alignItems: "center" as const,
+  },
+  tryAgainButtonText: {
+    fontSize: 18,
+    fontWeight: "600" as const,
+    color: colors.mint,
   },
 });
