@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Stack, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, Save } from "lucide-react-native";
@@ -24,9 +24,9 @@ export default function SettingsScreen() {
   const [cooldownSeconds, setCooldownSeconds] = useState<string>("5");
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
-  useState(() => {
+  useEffect(() => {
     loadSettings();
-  });
+  }, []);
 
   const loadSettings = async () => {
     try {

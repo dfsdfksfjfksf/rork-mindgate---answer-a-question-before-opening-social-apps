@@ -107,7 +107,7 @@ export default function GateScreen() {
   };
 
   const checkAnswer = async () => {
-    if (!currentQuestion || !assignment) return;
+    if (!currentQuestion || !assignment || !userAnswer.trim()) return;
 
     let correct = false;
 
@@ -486,6 +486,7 @@ export default function GateScreen() {
             onPress={() => {
               setShowResult(false);
               setUserAnswer("");
+              setIsCorrect(false);
             }}
             activeOpacity={0.8}
           >
