@@ -63,16 +63,6 @@ export default function DashboardScreen() {
     appAssignments.filter((a) => a.enabled), 
     [appAssignments]
   );
-  
-  const setupCompletedCount = useMemo(() => 
-    enabledAssignments.filter((a) => a.setupCompleted).length,
-    [enabledAssignments]
-  );
-
-  const allSetupsComplete = useMemo(() => 
-    enabledAssignments.length > 0 && setupCompletedCount === enabledAssignments.length,
-    [enabledAssignments.length, setupCompletedCount]
-  );
 
   const bestStreak = useMemo(() => {
     if (attempts.length === 0) return 0;
@@ -161,10 +151,10 @@ export default function DashboardScreen() {
 
           {/* Primary CTA */}
           <Animated.View style={[styles.ctaContainer, { opacity: fadeAnim }]}>
-            {!allSetupsComplete && enabledAssignments.length > 0 ? (
+            <View style={styles.ctaGroup}>
               <TouchableOpacity 
                 style={styles.primaryCta}
-                onPress={handleSetupPress}
+                onPress={handlePreviewGatePress}
                 activeOpacity={0.8}
               >
                 <LinearGradient
@@ -173,34 +163,18 @@ export default function DashboardScreen() {
                   end={{ x: 1, y: 1 }}
                   style={styles.ctaGradient}
                 >
-                  <Text style={styles.ctaTitle}>Finish setup</Text>
-                  <Text style={styles.ctaSubtext}>{setupCompletedCount}/{enabledAssignments.length} apps done</Text>
+                  <Text style={styles.ctaTitle}>Try a learning gate</Text>
+                  <Text style={styles.ctaSubtext}>See how it works before setting up</Text>
                 </LinearGradient>
               </TouchableOpacity>
-            ) : (
-              <View style={styles.ctaGroup}>
-                <TouchableOpacity 
-                  style={styles.primaryCta}
-                  onPress={handlePreviewGatePress}
-                  activeOpacity={0.8}
-                >
-                  <LinearGradient
-                    colors={[colors.gradient.start, colors.gradient.end]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.ctaGradient}
-                  >
-                    <Text style={styles.ctaTitle}>Start 5-question drill</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  onPress={handlePreviewGatePress}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.secondaryLink, { color: colors.mint }]}>Preview gate</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+              <TouchableOpacity 
+                style={[styles.secondaryCta, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}
+                onPress={handleSetupPress}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.secondaryCtaText, { color: colors.text }]}>📱 How to block an app</Text>
+              </TouchableOpacity>
+            </View>
           </Animated.View>
 
           {/* Today Strip */}
@@ -424,6 +398,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "500" as const,
     textDecorationLine: "underline" as const,
+  },
+  secondaryCta: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: spacing.borderRadius.button,
+    borderWidth: 1,
+    alignItems: "center" as const,
+    marginTop: 12,
+  },
+  secondaryCtaText: {
+    fontSize: 15,
+    fontWeight: "600" as const,
   },
   todayStrip: {
     marginBottom: 24,
