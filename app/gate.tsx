@@ -42,6 +42,8 @@ export default function GateScreen() {
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isCheckingAnswer, setIsCheckingAnswer] = useState<boolean>(false);
+  const resultFadeAnim = useRef(new Animated.Value(0)).current;
+  const resultScaleAnim = useRef(new Animated.Value(0.95)).current;
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -151,31 +153,51 @@ export default function GateScreen() {
     setIsCorrect(false);
   };
 
-  const checkAnswer = async () => {
-    if (!currentQuestion || !assignment || !userAnswer.trim() || isCheckingAnswer) return;
+  const checkAnswer = async (answer?: string) => {
+    const answerToCheck = answer || userAnswer;
+    if (!currentQuestion || !assignment || !answerToCheck.trim() || isCheckingAnswer) return;
 
     setIsCheckingAnswer(true);
-    console.log("Checking answer:", userAnswer);
+    console.log("Checking answer:", answerToCheck);
 
     let correct = false;
 
     if (currentQuestion.type === "mcq") {
-      correct = userAnswer === currentQuestion.correctAnswer;
+      correct = answerToCheck === currentQuestion.correctAnswer;
     } else if (currentQuestion.type === "short_answer" && currentQuestion.acceptableAnswers) {
-      const normalizedAnswer = userAnswer.trim().toLowerCase();
+      const normalizedAnswer = answerToCheck.trim().toLowerCase();
       correct = currentQuestion.acceptableAnswers.some(
         (acceptable) => acceptable.toLowerCase() === normalizedAnswer
       );
     }
 
     console.log("Answer is correct:", correct);
+    
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
     setIsCorrect(correct);
     setShowResult(true);
+    
+    resultFadeAnim.setValue(0);
+    resultScaleAnim.setValue(0.95);
+    Animated.parallel([
+      Animated.timing(resultFadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(resultScaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 50,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
     await addAttempt({
       appAssignmentId: assignment.id,
       questionId: currentQuestion.id,
-      userAnswer,
+      userAnswer: answerToCheck,
       isCorrect: correct,
     });
 
@@ -196,12 +218,12 @@ export default function GateScreen() {
         setTimeout(() => {
           setShowSuccess(true);
           setIsCheckingAnswer(false);
-        }, 800);
+        }, 1000);
       } else {
         setTimeout(() => {
           loadNextQuestion();
           setIsCheckingAnswer(false);
-        }, 1500);
+        }, 1800);
       }
     } else {
       setCurrentStreak(0);
@@ -459,8 +481,13 @@ export default function GateScreen() {
                       !isCorrect &&
                       styles.choiceButtonWrong,
                   ]}
-                  onPress={() => !showResult && setUserAnswer(choice)}
-                  disabled={showResult || cooldownRemaining > 0}
+                  onPress={() => {
+                    if (!showResult && cooldownRemaining === 0 && !isCheckingAnswer) {
+                      setUserAnswer(choice);
+                      checkAnswer(choice);
+                    }
+                  }}
+                  disabled={showResult || cooldownRemaining > 0 || isCheckingAnswer}
                   activeOpacity={0.7}
                 >
                   <Text
@@ -492,14 +519,16 @@ export default function GateScreen() {
             />
           )}
 
-          {showResult && currentQuestion.explanation && (
-            <View style={styles.explanationContainer}>
-              <Text style={styles.explanationText}>💡 {currentQuestion.explanation}</Text>
-            </View>
-          )}
-
           {showResult && (
-            <View style={styles.resultContainer}>
+            <Animated.View 
+              style={[
+                styles.resultContainer,
+                {
+                  opacity: resultFadeAnim,
+                  transform: [{ scale: resultScaleAnim }],
+                },
+              ]}
+            >
               {isCorrect ? (
                 <>
                   <CheckCircle size={32} color={colors.mint} strokeWidth={2.5} />
@@ -511,7 +540,21 @@ export default function GateScreen() {
                   <Text style={styles.resultTextWrong}>not quite—have a look:</Text>
                 </>
               )}
-            </View>
+            </Animated.View>
+          )}
+
+          {showResult && currentQuestion.explanation && (
+            <Animated.View 
+              style={[
+                styles.explanationContainer,
+                {
+                  opacity: resultFadeAnim,
+                  transform: [{ scale: resultScaleAnim }],
+                },
+              ]}
+            >
+              <Text style={styles.explanationText}>💡 {currentQuestion.explanation}</Text>
+            </Animated.View>
           )}
 
           {cooldownRemaining > 0 && (
@@ -536,37 +579,70 @@ export default function GateScreen() {
           )}
         </Animated.View>
 
-        {!showResult && cooldownRemaining === 0 && (
+        {!showResult && cooldownRemaining === 0 && currentQuestion.type === "short_answer" && (
           <TouchableOpacity
-            style={[styles.checkButton, !userAnswer.trim() && styles.checkButtonDisabled]}
-            onPress={checkAnswer}
-            disabled={!userAnswer.trim()}
+            style={[styles.checkButton, (!userAnswer.trim() || isCheckingAnswer) && styles.checkButtonDisabled]}
+            onPress={() => checkAnswer()}
+            disabled={!userAnswer.trim() || isCheckingAnswer}
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={userAnswer.trim() ? [colors.gradient.start, colors.gradient.end] : [colors.glass, colors.glass]}
+              colors={userAnswer.trim() && !isCheckingAnswer ? [colors.gradient.start, colors.gradient.end] : [colors.glass, colors.glass]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.checkButtonGradient}
             >
-              <Text style={[styles.checkButtonText, !userAnswer.trim() && styles.checkButtonTextDisabled]}>
-                Check Answer
+              <Text style={[styles.checkButtonText, (!userAnswer.trim() || isCheckingAnswer) && styles.checkButtonTextDisabled]}>
+                {isCheckingAnswer ? "Checking..." : "Check Answer"}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
         )}
 
         {showResult && !isCorrect && cooldownRemaining === 0 && (
-          <TouchableOpacity
-            style={styles.tryAgainButton}
-            onPress={() => {
-              console.log("Try again pressed - loading new question");
-              loadNextQuestion();
+          <Animated.View
+            style={{
+              opacity: resultFadeAnim,
+              transform: [{ scale: resultScaleAnim }],
             }}
-            activeOpacity={0.8}
           >
-            <Text style={styles.tryAgainButtonText}>Try Again</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tryAgainButton}
+              onPress={() => {
+                console.log("Try again pressed - loading new question");
+                Animated.parallel([
+                  Animated.timing(fadeAnim, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                  }),
+                  Animated.timing(scaleAnim, {
+                    toValue: 0.95,
+                    duration: 200,
+                    useNativeDriver: true,
+                  }),
+                ]).start(() => {
+                  loadNextQuestion();
+                  Animated.parallel([
+                    Animated.timing(fadeAnim, {
+                      toValue: 1,
+                      duration: 300,
+                      useNativeDriver: true,
+                    }),
+                    Animated.spring(scaleAnim, {
+                      toValue: 1,
+                      friction: 8,
+                      tension: 40,
+                      useNativeDriver: true,
+                    }),
+                  ]).start();
+                });
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.tryAgainButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </Animated.View>
         )}
       </View>
     </View>
