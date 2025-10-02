@@ -270,11 +270,11 @@ export default function DashboardScreen() {
           <Animated.View style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.glassBorder, opacity: fadeAnim }]}>
             <View style={styles.cardHeader}>
               <View>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>protected apps</Text>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>blocked apps</Text>
                 <Text style={[styles.cardSubtext, { color: colors.textMuted }]}>
                   {enabledAssignments.length > 0 
-                    ? `${enabledAssignments.length} app${enabledAssignments.length > 1 ? 's' : ''} protected`
-                    : "Add apps to protect with learning gates"
+                    ? `${enabledAssignments.length} app${enabledAssignments.length > 1 ? 's' : ''} blocked`
+                    : "Add apps to block with learning gates"
                   }
                 </Text>
               </View>
@@ -325,7 +325,7 @@ export default function DashboardScreen() {
             ) : (
               <View style={styles.emptyState}>
                 <Lock size={32} color={colors.textMuted} />
-                <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No apps protected yet</Text>
+                <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No apps blocked yet</Text>
                 <Text style={[styles.emptyStateText, { color: colors.textMuted }]}>
                   Add social media apps to create learning gates that help you build better habits
                 </Text>
