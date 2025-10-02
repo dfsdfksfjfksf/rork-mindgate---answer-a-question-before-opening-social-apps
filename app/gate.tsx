@@ -34,6 +34,7 @@ export default function GateScreen() {
   const [showResult, setShowResult] = useState<boolean>(false);
   const [isCorrect, setIsCorrect] = useState<boolean>(false);
   const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
+  const cooldownProgress = useRef(new Animated.Value(1)).current;
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -69,6 +70,19 @@ export default function GateScreen() {
       return () => clearTimeout(timer);
     }
   }, [cooldownRemaining]);
+
+  useEffect(() => {
+    if (cooldownRemaining > 0 && assignment) {
+      const progress = cooldownRemaining / assignment.cooldownSeconds;
+      Animated.timing(cooldownProgress, {
+        toValue: progress,
+        duration: 1000,
+        useNativeDriver: false,
+      }).start();
+    } else {
+      cooldownProgress.setValue(1);
+    }
+  }, [cooldownRemaining, assignment, cooldownProgress]);
 
   const loadNextQuestion = () => {
     if (questions.length === 0) return;
@@ -139,29 +153,48 @@ export default function GateScreen() {
       }
     } else {
       setCurrentStreak(0);
-      if (assignment.cooldownSeconds > 0) {
-        setCooldownRemaining(assignment.cooldownSeconds);
-      }
+      const cooldown = assignment.cooldownSeconds > 0 ? assignment.cooldownSeconds : 5;
+      setCooldownRemaining(cooldown);
     }
   };
 
   const handleContinue = async () => {
     if (!assignment?.schemeOrStoreURL) return;
 
-    const url = assignment.schemeOrStoreURL;
+    let url = assignment.schemeOrStoreURL;
+    
+    if (!url.includes('://')) {
+      url = url + '://';
+    }
+    
+    console.log('Attempting to open URL:', url);
     
     try {
-      const canOpen = await Linking.canOpenURL(url);
+      const supported = await Linking.canOpenURL(url);
+      console.log('URL supported:', supported);
       
-      if (canOpen) {
+      if (supported) {
         await Linking.openURL(url);
+        console.log('Successfully opened:', url);
       } else {
-        console.log("Cannot open URL:", url);
-        alert(`Unable to open ${app}. Please check the app URL in settings.`);
+        console.warn('Cannot open URL:', url);
+        if (Platform.OS === 'web') {
+          window.open(url, '_blank');
+        } else {
+          alert(`Unable to open ${app}. The app may not be installed on your device.`);
+        }
       }
     } catch (error) {
-      console.error("Error opening URL:", error);
-      alert(`Error opening ${app}. The app may not be installed.`);
+      console.error('Error opening URL:', error);
+      if (Platform.OS === 'web') {
+        try {
+          window.open(url, '_blank');
+        } catch (e) {
+          alert(`Error opening ${app}: ${error}`);
+        }
+      } else {
+        alert(`Error opening ${app}. The app may not be installed.`);
+      }
     }
   };
 
@@ -410,6 +443,19 @@ export default function GateScreen() {
               <Text style={styles.cooldownText}>
                 try again in {cooldownRemaining}s
               </Text>
+              <View style={styles.cooldownBarContainer}>
+                <Animated.View
+                  style={[
+                    styles.cooldownBar,
+                    {
+                      width: cooldownProgress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0%', '100%'],
+                      }),
+                    },
+                  ]}
+                />
+              </View>
             </View>
           )}
         </Animated.View>
@@ -591,6 +637,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.peach,
     fontWeight: "500" as const,
+    marginBottom: 12,
+  },
+  cooldownBarContainer: {
+    width: '100%',
+    height: 4,
+    backgroundColor: colors.glass,
+    borderRadius: 2,
+    overflow: "hidden" as const,
+  },
+  cooldownBar: {
+    height: '100%',
+    backgroundColor: colors.peach,
+    borderRadius: 2,
   },
   checkButton: {
     borderRadius: spacing.borderRadius.button,
@@ -677,7 +736,7 @@ const styles = StyleSheet.create({
   },
   backButtonContainer: {
     position: "absolute" as const,
-    top: Platform.OS === "web" ? 20 : 20,
+    bottom: 40,
     left: 0,
     right: 0,
     flexDirection: "row" as const,

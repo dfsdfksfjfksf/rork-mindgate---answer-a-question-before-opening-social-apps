@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Animate
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { BookOpen, Smartphone, Settings } from "lucide-react-native";
+import { BookOpen, Smartphone, Settings, Sliders } from "lucide-react-native";
 import { useLearnLock } from "@/contexts/MindGateContext";
 import { colors, spacing } from "@/constants/colors";
 import { useEffect, useRef } from "react";
@@ -69,6 +69,16 @@ export default function DashboardScreen() {
                 </View>
                 <Text style={styles.tileTitle}>apps</Text>
                 <Text style={styles.tileSubtitle}>{enabledAssignments.length} active</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.tile} activeOpacity={0.8} onPress={() => router.push("/settings")}>
+              <View style={styles.glassCard}>
+                <View style={styles.tileIcon}>
+                  <Sliders size={28} color={colors.peach} strokeWidth={2} />
+                </View>
+                <Text style={styles.tileTitle}>settings</Text>
+                <Text style={styles.tileSubtitle}>customize defaults</Text>
               </View>
             </TouchableOpacity>
 
