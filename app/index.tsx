@@ -6,7 +6,42 @@ import { BookOpen, Smartphone, Settings, Sliders, Lock } from "lucide-react-nati
 import { useLearnLock } from "@/contexts/MindGateContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { spacing } from "@/constants/colors";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo, memo } from "react";
+
+// Memoized stat card component
+const StatCard = memo(({ value, label, colors }: { value: string | number; label: string; colors: any }) => (
+  <View style={[styles.statCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
+    <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
+    <Text style={[styles.statLabel, { color: colors.textMuted }]}>{label}</Text>
+  </View>
+));
+
+// Memoized tile component
+const DashboardTile = memo(({ 
+  icon, 
+  title, 
+  subtitle, 
+  colors, 
+  iconColor, 
+  onPress 
+}: { 
+  icon: any; 
+  title: string; 
+  subtitle: string; 
+  colors: any; 
+  iconColor: string; 
+  onPress: () => void;
+}) => (
+  <TouchableOpacity style={styles.tile} activeOpacity={0.8} onPress={onPress}>
+    <View style={[styles.glassCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
+      <View style={styles.tileIcon}>
+        {icon}
+      </View>
+      <Text style={[styles.tileTitle, { color: colors.text }]}>{title}</Text>
+      <Text style={[styles.tileSubtitle, { color: colors.textMuted }]}>{subtitle}</Text>
+    </View>
+  </TouchableOpacity>
+));
 
 export default function DashboardScreen() {
   const { todayAttempts, todayAccuracy, quizSets, appAssignments } = useLearnLock();
@@ -14,8 +49,16 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const enabledAssignments = appAssignments.filter((a) => a.enabled);
-  const timeSavedMinutes = Math.round(todayAttempts.length * 0.5);
+  // Memoize expensive calculations
+  const enabledAssignments = useMemo(() => 
+    appAssignments.filter((a) => a.enabled), 
+    [appAssignments]
+  );
+  
+  const timeSavedMinutes = useMemo(() => 
+    Math.round(todayAttempts.length * 0.5), 
+    [todayAttempts.length]
+  );
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -48,51 +91,39 @@ export default function DashboardScreen() {
           <Animated.View style={[styles.statsContainer, { opacity: fadeAnim }]}>
             <Text style={[styles.statsTitle, { color: colors.textMuted }]}>today</Text>
             <View style={styles.statsRow}>
-              <View style={[styles.statCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
-                <Text style={[styles.statValue, { color: colors.text }]}>{todayAccuracy}%</Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>accuracy</Text>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
-                <Text style={[styles.statValue, { color: colors.text }]}>{todayAttempts.length}</Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>attempts</Text>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
-                <Text style={[styles.statValue, { color: colors.text }]}>{timeSavedMinutes}m</Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>time saved</Text>
-              </View>
+              <StatCard value={`${todayAccuracy}%`} label="accuracy" colors={colors} />
+              <StatCard value={todayAttempts.length} label="attempts" colors={colors} />
+              <StatCard value={`${timeSavedMinutes}m`} label="time saved" colors={colors} />
             </View>
           </Animated.View>
 
           <View style={styles.tilesContainer}>
-            <TouchableOpacity style={styles.tile} activeOpacity={0.8} onPress={() => router.push("/quizzes")}>
-              <View style={[styles.glassCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
-                <View style={styles.tileIcon}>
-                  <BookOpen size={28} color={colors.mint} strokeWidth={2} />
-                </View>
-                <Text style={[styles.tileTitle, { color: colors.text }]}>quizzes</Text>
-                <Text style={[styles.tileSubtitle, { color: colors.textMuted }]}>{quizSets.length} sets</Text>
-              </View>
-            </TouchableOpacity>
+            <DashboardTile
+              icon={<BookOpen size={28} color={colors.mint} strokeWidth={2} />}
+              title="quizzes"
+              subtitle={`${quizSets.length} sets`}
+              colors={colors}
+              iconColor={colors.mint}
+              onPress={() => router.push("/quizzes")}
+            />
 
-            <TouchableOpacity style={styles.tile} activeOpacity={0.8} onPress={() => router.push("/apps")}>
-              <View style={[styles.glassCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
-                <View style={styles.tileIcon}>
-                  <Smartphone size={28} color={colors.lilac} strokeWidth={2} />
-                </View>
-                <Text style={[styles.tileTitle, { color: colors.text }]}>apps</Text>
-                <Text style={[styles.tileSubtitle, { color: colors.textMuted }]}>{enabledAssignments.length} active</Text>
-              </View>
-            </TouchableOpacity>
+            <DashboardTile
+              icon={<Smartphone size={28} color={colors.lilac} strokeWidth={2} />}
+              title="apps"
+              subtitle={`${enabledAssignments.length} active`}
+              colors={colors}
+              iconColor={colors.lilac}
+              onPress={() => router.push("/apps")}
+            />
 
-            <TouchableOpacity style={styles.tile} activeOpacity={0.8} onPress={() => router.push("/settings")}>
-              <View style={[styles.glassCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
-                <View style={styles.tileIcon}>
-                  <Sliders size={28} color={colors.peach} strokeWidth={2} />
-                </View>
-                <Text style={[styles.tileTitle, { color: colors.text }]}>settings</Text>
-                <Text style={[styles.tileSubtitle, { color: colors.textMuted }]}>customize defaults</Text>
-              </View>
-            </TouchableOpacity>
+            <DashboardTile
+              icon={<Sliders size={28} color={colors.peach} strokeWidth={2} />}
+              title="settings"
+              subtitle="customize defaults"
+              colors={colors}
+              iconColor={colors.peach}
+              onPress={() => router.push("/settings")}
+            />
 
             {enabledAssignments.length === 0 && (
               <TouchableOpacity style={[styles.tile, styles.setupTile]} activeOpacity={0.8} onPress={() => router.push("/setup")}>

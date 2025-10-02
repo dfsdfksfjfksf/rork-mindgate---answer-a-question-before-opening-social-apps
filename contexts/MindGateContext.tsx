@@ -192,5 +192,25 @@ export const [LearnLockProvider, useLearnLock] = createContextHook(() => {
     getAppAssignmentByName,
     todayAttempts,
     todayAccuracy,
-  }), [quizSets, questions, appAssignments, attempts, isLoading, addQuizSet, updateQuizSet, deleteQuizSet, addQuestion, updateQuestion, deleteQuestion, addAppAssignment, updateAppAssignment, deleteAppAssignment, addAttempt, getQuestionsForQuizSet, getAppAssignmentByName, todayAttempts, todayAccuracy]);
+  }), [
+    quizSets,
+    questions,
+    appAssignments,
+    attempts,
+    isLoading,
+    addQuizSet,
+    updateQuizSet,
+    deleteQuizSet,
+    addQuestion,
+    updateQuestion,
+    deleteQuestion,
+    addAppAssignment,
+    updateAppAssignment,
+    deleteAppAssignment,
+    addAttempt,
+    getQuestionsForQuizSet,
+    getAppAssignmentByName,
+    todayAttempts,
+    todayAccuracy,
+  ]);
 });

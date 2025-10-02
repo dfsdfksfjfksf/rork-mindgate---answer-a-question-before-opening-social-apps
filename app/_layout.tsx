@@ -10,7 +10,16 @@ import { Home } from "lucide-react-native";
 
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
+// Optimize QueryClient with better defaults
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: 1,
+    },
+  },
+});
 
 function RootLayoutNav() {
   const HomeButton = () => (

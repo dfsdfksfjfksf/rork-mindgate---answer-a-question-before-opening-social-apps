@@ -244,6 +244,7 @@ export default function GateScreen() {
 
     let url = assignment.schemeOrStoreURL;
     
+    // Handle different URL formats
     if (!url.includes('://')) {
       url = url + '://';
     }
@@ -251,31 +252,60 @@ export default function GateScreen() {
     console.log('Attempting to open URL:', url);
     
     try {
-      const supported = await Linking.canOpenURL(url);
-      console.log('URL supported:', supported);
-      
-      if (supported) {
-        await Linking.openURL(url);
-        console.log('Successfully opened:', url);
-      } else {
-        console.warn('Cannot open URL:', url);
-        if (Platform.OS === 'web') {
-          window.open(url, '_blank');
+      // For iOS, try the app scheme first, then fallback to App Store
+      if (Platform.OS === 'ios') {
+        const supported = await Linking.canOpenURL(url);
+        console.log('URL supported:', supported);
+        
+        if (supported) {
+          await Linking.openURL(url);
+          console.log('Successfully opened:', url);
+          return;
         } else {
-          alert(`Unable to open ${app}. The app may not be installed on your device.`);
+          // Fallback to App Store if app scheme doesn't work
+          const appStoreUrl = `https://apps.apple.com/search?term=${encodeURIComponent(app)}`;
+          console.log('Fallback to App Store:', appStoreUrl);
+          await Linking.openURL(appStoreUrl);
+          return;
         }
       }
+      
+      // For Android
+      if (Platform.OS === 'android') {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+          return;
+        } else {
+          // Fallback to Play Store
+          const playStoreUrl = `https://play.google.com/store/search?q=${encodeURIComponent(app)}`;
+          await Linking.openURL(playStoreUrl);
+          return;
+        }
+      }
+      
+      // For web
+      if (Platform.OS === 'web') {
+        // Try to open the URL, fallback to web version if available
+        try {
+          if (url.includes('instagram://')) {
+            window.open('https://instagram.com', '_blank');
+          } else if (url.includes('twitter://')) {
+            window.open('https://twitter.com', '_blank');
+          } else if (url.includes('tiktok://')) {
+            window.open('https://tiktok.com', '_blank');
+          } else {
+            window.open(url, '_blank');
+          }
+        } catch (e) {
+          console.error('Web fallback failed:', e);
+        }
+      }
+      
     } catch (error) {
       console.error('Error opening URL:', error);
-      if (Platform.OS === 'web') {
-        try {
-          window.open(url, '_blank');
-        } catch (e) {
-          alert(`Error opening ${app}: ${error}`);
-        }
-      } else {
-        alert(`Error opening ${app}. The app may not be installed.`);
-      }
+      // Final fallback - show helpful message
+      alert(`Unable to open ${app}. Please install the app from your device's app store.`);
     }
   };
 
