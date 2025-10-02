@@ -1,8 +1,8 @@
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform, Linking, Animated } from "react-native";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useLocalSearchParams, Stack } from "expo-router";
+import { useLocalSearchParams, Stack, router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { CheckCircle, XCircle, ExternalLink, AlertCircle, Lock } from "lucide-react-native";
+import { CheckCircle, XCircle, ExternalLink, AlertCircle, Lock, ArrowLeft, Home } from "lucide-react-native";
 import { useLearnLock } from "@/contexts/MindGateContext";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -149,12 +149,19 @@ export default function GateScreen() {
     if (!assignment?.schemeOrStoreURL) return;
 
     const url = assignment.schemeOrStoreURL;
-    const canOpen = await Linking.canOpenURL(url);
-
-    if (canOpen) {
-      await Linking.openURL(url);
-    } else {
-      console.log("Cannot open URL:", url);
+    
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        console.log("Cannot open URL:", url);
+        alert(`Unable to open ${app}. Please check the app URL in settings.`);
+      }
+    } catch (error) {
+      console.error("Error opening URL:", error);
+      alert(`Error opening ${app}. The app may not be installed.`);
     }
   };
 
@@ -162,6 +169,14 @@ export default function GateScreen() {
     return (
       <View style={[styles.container, { paddingTop: Platform.OS === "web" ? 60 : insets.top + 20 }]}>
         <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.backButtonContainer}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ArrowLeft size={24} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/")} style={styles.homeButton}>
+            <Home size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
         <View style={styles.errorContainer}>
           <AlertCircle size={48} color={colors.peach} />
           <Text style={styles.errorTitle}>No App Specified</Text>
@@ -175,6 +190,14 @@ export default function GateScreen() {
     return (
       <View style={[styles.container, { paddingTop: Platform.OS === "web" ? 60 : insets.top + 20 }]}>
         <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.backButtonContainer}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ArrowLeft size={24} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/")} style={styles.homeButton}>
+            <Home size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
         <View style={styles.errorContainer}>
           <AlertCircle size={48} color={colors.peach} />
           <Text style={styles.errorTitle}>Assignment Not Found</Text>
@@ -190,6 +213,14 @@ export default function GateScreen() {
     return (
       <View style={[styles.container, { paddingTop: Platform.OS === "web" ? 60 : insets.top + 20 }]}>
         <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.backButtonContainer}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ArrowLeft size={24} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/")} style={styles.homeButton}>
+            <Home size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
         <View style={styles.errorContainer}>
           <AlertCircle size={48} color={colors.peach} />
           <Text style={styles.errorTitle}>No Questions Available</Text>
@@ -205,6 +236,14 @@ export default function GateScreen() {
     return (
       <View style={[styles.container, { paddingTop: Platform.OS === "web" ? 60 : insets.top + 20 }]}>
         <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.backButtonContainer}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ArrowLeft size={24} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/")} style={styles.homeButton}>
+            <Home size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
         <LinearGradient
           colors={[colors.gradient.start, colors.gradient.end]}
           start={{ x: 0, y: 0 }}
@@ -237,6 +276,14 @@ export default function GateScreen() {
     return (
       <View style={[styles.container, { paddingTop: Platform.OS === "web" ? 60 : insets.top + 20 }]}>
         <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.backButtonContainer}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ArrowLeft size={24} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/")} style={styles.homeButton}>
+            <Home size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Loading question...</Text>
         </View>
@@ -247,6 +294,14 @@ export default function GateScreen() {
   return (
     <View style={[styles.container, { paddingTop: Platform.OS === "web" ? 60 : insets.top + 20 }]}>
       <Stack.Screen options={{ headerShown: false }} />
+      <View style={styles.backButtonContainer}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <ArrowLeft size={24} color={colors.text} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push("/")} style={styles.homeButton}>
+          <Home size={24} color={colors.text} />
+        </TouchableOpacity>
+      </View>
       <View style={styles.content}>
         <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
           <View style={styles.lockIcon}>
@@ -606,5 +661,35 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.7)",
     textAlign: "center" as const,
     fontStyle: "italic" as const,
+  },
+  backButtonContainer: {
+    position: "absolute" as const,
+    top: Platform.OS === "web" ? 20 : 20,
+    left: 0,
+    right: 0,
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    paddingHorizontal: 20,
+    zIndex: 10,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.glass,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  homeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.glass,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
 });
