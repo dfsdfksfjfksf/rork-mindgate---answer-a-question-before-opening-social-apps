@@ -7,6 +7,7 @@ const KEYS = {
   APP_ASSIGNMENTS: "mindgate_app_assignments",
   ATTEMPTS: "mindgate_attempts",
   INITIALIZED: "mindgate_initialized",
+  ONBOARDING_COMPLETED: "mindgate_onboarding_completed",
 } as const;
 
 // Cache to prevent unnecessary storage reads
@@ -92,5 +93,17 @@ export const storage = {
   async setInitialized(): Promise<void> {
     await AsyncStorage.setItem(KEYS.INITIALIZED, "true");
     invalidateCache(KEYS.INITIALIZED);
+  },
+
+  async isOnboardingCompleted(): Promise<boolean> {
+    return getCachedOrFetch(KEYS.ONBOARDING_COMPLETED, async () => {
+      const value = await AsyncStorage.getItem(KEYS.ONBOARDING_COMPLETED);
+      return value === "true";
+    });
+  },
+
+  async setOnboardingCompleted(): Promise<void> {
+    await AsyncStorage.setItem(KEYS.ONBOARDING_COMPLETED, "true");
+    invalidateCache(KEYS.ONBOARDING_COMPLETED);
   },
 };

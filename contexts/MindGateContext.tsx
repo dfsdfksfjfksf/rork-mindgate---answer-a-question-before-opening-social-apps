@@ -10,6 +10,7 @@ export const [LearnLockProvider, useLearnLock] = createContextHook(() => {
   const [appAssignments, setAppAssignments] = useState<AppAssignment[]>([]);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(false);
 
   useEffect(() => {
     loadData();
@@ -17,7 +18,12 @@ export const [LearnLockProvider, useLearnLock] = createContextHook(() => {
 
   const loadData = async () => {
     try {
-      const initialized = await storage.isInitialized();
+      const [initialized, onboardingDone] = await Promise.all([
+        storage.isInitialized(),
+        storage.isOnboardingCompleted(),
+      ]);
+      
+      setOnboardingCompleted(onboardingDone);
       
       if (!initialized) {
         await storage.setQuizSets(seedQuizSets);
@@ -172,6 +178,11 @@ export const [LearnLockProvider, useLearnLock] = createContextHook(() => {
     return Math.round((correct / todayAttempts.length) * 100);
   }, [todayAttempts]);
 
+  const completeOnboarding = useCallback(async () => {
+    await storage.setOnboardingCompleted();
+    setOnboardingCompleted(true);
+  }, []);
+
   return useMemo(() => ({
     quizSets,
     questions,
@@ -192,6 +203,8 @@ export const [LearnLockProvider, useLearnLock] = createContextHook(() => {
     getAppAssignmentByName,
     todayAttempts,
     todayAccuracy,
+    onboardingCompleted,
+    completeOnboarding,
   }), [
     quizSets,
     questions,
@@ -212,5 +225,7 @@ export const [LearnLockProvider, useLearnLock] = createContextHook(() => {
     getAppAssignmentByName,
     todayAttempts,
     todayAccuracy,
+    onboardingCompleted,
+    completeOnboarding,
   ]);
 });

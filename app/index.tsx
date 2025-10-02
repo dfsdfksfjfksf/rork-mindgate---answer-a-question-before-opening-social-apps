@@ -53,7 +53,7 @@ const AppChip = memo(function AppChip({ assignment, colors }: { assignment: any;
 });
 
 export default function DashboardScreen() {
-  const { todayAttempts, todayAccuracy, quizSets, appAssignments, attempts } = useLearnLock();
+  const { todayAttempts, todayAccuracy, quizSets, appAssignments, attempts, onboardingCompleted, isLoading } = useLearnLock();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -125,6 +125,13 @@ export default function DashboardScreen() {
       useNativeDriver: true,
     }).start();
   }, [fadeAnim]);
+
+  // Redirect to welcome screen if onboarding not completed
+  useEffect(() => {
+    if (!isLoading && !onboardingCompleted) {
+      router.replace("/welcome" as any);
+    }
+  }, [isLoading, onboardingCompleted]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.ink }]}>
